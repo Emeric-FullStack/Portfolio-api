@@ -1,20 +1,27 @@
 // controllers/messageController.ts
 import { Request, Response, NextFunction } from "express";
 import Message from "../models/Message";
+import xss from "xss";
 
 export const createMessage = async (req: Request, res: Response) => {
   try {
-    if (req.user) {
-      const content = req.body.content;
-      const sender = req.user.id;
-      const message = new Message({ content, sender });
-      await message.save();
-      res.status(201).json(message);
-    } else {
-      res.status(404).json({ message: "User not found" });
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
+
+    const content = xss(req.body.content);
+    if (!content || content.length > 1000) {
+      res.status(400).json({ message: "Invalid message content" });
+      return;
+    }
+
+    const sender = req.user.id;
+    const message = new Message({ content, sender });
+    await message.save();
+    res.status(201).json(message);
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).json({ error: "Erreur lors de la création du message." });
   }
 };

@@ -9,6 +9,7 @@ export interface IUser extends Document {
   createdAt: string;
   isOnline: boolean;
   isAdmin: boolean;
+  articles_liked: Array<mongoose.Types.ObjectId>;
 }
 
 const UserSchema: Schema = new Schema({
@@ -19,7 +20,13 @@ const UserSchema: Schema = new Schema({
   company: { type: String },
   createdAt: { type: Date },
   isOnline: { type: Boolean, default: false },
-  isAdmin: { type: Boolean, default: false }
+  isAdmin: { type: Boolean, default: false },
+  articles_liked: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Article"
+    }
+  ]
 });
 
 export default mongoose.model<IUser>("User", UserSchema);

@@ -11,7 +11,7 @@ import { authenticateUser } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
-router.post("/verify-token", authenticateUser, trackUserActivity, verifyToken);
+router.get("/verify-token", authenticateUser, trackUserActivity, verifyToken);
 router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.get("/profile", authenticateUser, trackUserActivity, getUserProfile);

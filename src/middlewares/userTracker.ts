@@ -19,6 +19,7 @@ export const trackUserActivity = async (
         ipAddress: ipAddress.toString(),
         userAgent
       });
+
       await log.save();
     }
   } catch (error) {
