@@ -4,7 +4,8 @@ import {
   loginUser,
   getUserProfile,
   setOnlineStatus,
-  verifyToken
+  verifyToken,
+  getAdminId
 } from "../controllers/userController";
 import { trackUserActivity } from "../middlewares/userTracker";
 import { authenticateUser } from "../middlewares/authMiddleware";
@@ -16,5 +17,6 @@ router.post("/signup", signupUser);
 router.post("/login", loginUser);
 router.get("/profile", authenticateUser, trackUserActivity, getUserProfile);
 router.patch("/status", authenticateUser, trackUserActivity, setOnlineStatus);
+router.get("/admin-id", authenticateUser, getAdminId);
 
 export default router;

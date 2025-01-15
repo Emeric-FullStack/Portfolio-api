@@ -4,20 +4,35 @@ import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import Message from "./models/Message";
+import Message, { IMessagePopulated } from "./models/Message";
+import { Document, Types } from "mongoose";
+import messageRoutes from "./routes/messageRoutes";
+import User, { IUser } from "./models/User";
+import rateLimit from "express-rate-limit";
+
+interface MessageDocument extends Document {
+  _id: Types.ObjectId;
+  content: string;
+  sender: Types.ObjectId;
+  receiver: Types.ObjectId;
+  read: boolean;
+  createdAt: Date;
+}
 
 interface ServerToClientEvents {
-  "receive-message": (data: { content: string; senderEmail: string }) => void;
+  "receive-message": (message: IMessagePopulated) => void;
+  user_status: (data: { userId: string; online: boolean }) => void;
 }
+
 interface ClientToServerEvents {
-  "send-message": (message: {
-    content: string;
-    receiverEmail?: string;
-  }) => void;
+  "send-message": (message: IMessagePopulated) => void;
 }
+
 interface InterServerEvents {
   ping: () => void;
+  connection_error: (err: Error) => void;
 }
+
 interface SocketData {
   user?: {
     id: string;
@@ -26,6 +41,13 @@ interface SocketData {
     lastName?: string;
   };
 }
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limite chaque IP à 100 requêtes par fenêtre
+});
+
+app.use("/api/", limiter);
 
 if (
   process.env.PORT &&
@@ -46,15 +68,38 @@ if (
     SocketData
   >(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL,
-      methods: ["GET", "POST"]
-    }
+      origin: ["http://localhost:4200", "http://localhost:5173"],
+      methods: ["GET", "POST"],
+      credentials: true,
+      allowedHeaders: ["Authorization"]
+    },
+    path: "/socket.io/",
+    transports: ["websocket", "polling"]
   });
 
-  const connectedUsers = new Map<string, string>();
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  io.engine.on("connection_error", (err) => {
+    console.log("Connection error:", err);
+  });
+
+  io.use((socket, next) => {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error("Authentication error"));
+    }
+
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET as string,
+      (err: any, decoded: any) => {
+        if (err) return next(new Error("Authentication error"));
+        socket.data.user = decoded;
+        next();
+      }
+    );
+  });
 
   io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
     const token = socket.handshake.auth.token;
 
     jwt.verify(
@@ -62,62 +107,47 @@ if (
       process.env.JWT_SECRET as string,
       (err: any, decoded: any) => {
         if (err) {
+          console.log("Token verification failed:", err);
           socket.disconnect();
           return;
         }
 
         socket.data.user = decoded;
-        connectedUsers.set(decoded.email, socket.id);
-        console.log(`Nouvel utilisateur connecté: ${decoded.email}`);
+        console.log("User authenticated:", decoded.email);
       }
     );
 
-    socket.on(
-      "send-message",
-      async (message: { content: string; receiverEmail?: string }) => {
-        if (!message.content || message.content.length > 1000) {
-          return;
-        }
-        const { content } = message;
-        const senderEmail = socket.data.user?.email;
-
-        if (!senderEmail) {
-          console.log("Utilisateur non authentifié.");
-          return;
-        }
-
-        const receiverEmail = ADMIN_EMAIL;
-
-        try {
-          const newMessage = new Message({
-            content,
-            sender: socket.data.user?.id,
-            createdAt: new Date()
-          });
-
-          await newMessage.save();
-
-          const receiverSocketId = connectedUsers.get(receiverEmail);
-          if (receiverSocketId) {
-            io.to(receiverSocketId).emit("receive-message", {
-              content,
-              senderEmail
-            });
-            console.log(`Message de ${senderEmail} envoyé à ${receiverEmail}.`);
-          } else {
-            console.log(`Administrateur ${receiverEmail} non connecté.`);
-          }
-        } catch (err) {
-          console.error("Erreur lors de l'enregistrement du message :", err);
-        }
+    socket.on("send-message", async (message) => {
+      try {
+        // Émettre uniquement au destinataire
+        socket.broadcast.emit("receive-message", message);
+      } catch (error) {
+        console.error("Error handling socket message:", error);
       }
-    );
+    });
+
+    socket.on("error", (error: Error) => {
+      console.log("Socket error:", error);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("User disconnected:", socket.id, "Reason:", reason);
+    });
+
+    // Quand un utilisateur se connecte
+    if (socket.data.user) {
+      socket.broadcast.emit("user_status", {
+        userId: socket.data.user.id,
+        online: true
+      });
+    }
 
     socket.on("disconnect", () => {
-      const userEmail = socket.data.user?.email;
-      if (userEmail) {
-        connectedUsers.delete(userEmail);
-        console.log(`Utilisateur déconnecté: ${userEmail}`);
+      if (socket.data.user) {
+        socket.broadcast.emit("user_status", {
+          userId: socket.data.user.id,
+          online: false
+        });
       }
     });
   });
@@ -127,12 +157,15 @@ if (
     .then(() => {
       console.log("Connected to MongoDB");
       httpServer.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(`Server running on port ${PORT}`);
+        console.log("Socket.IO configured and listening");
       });
     })
     .catch((err) => {
       console.error("Database connection error:", err);
     });
+
+  app.use("/api/messages", messageRoutes);
 } else {
   console.error("Missing required environment variables");
 }

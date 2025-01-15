@@ -81,6 +81,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     if (process.env.JWT_SECRET) {
       const user = await User.findOne({ email });
+
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -93,7 +94,11 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       }
 
       const token = jwt.sign(
-        { id: user._id, email: user.email },
+        {
+          id: user._id,
+          email: user.email,
+          isAdmin: user.isAdmin
+        },
         process.env.JWT_SECRET,
         { expiresIn: "1h" }
       );
@@ -106,7 +111,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
-            company: user.company
+            company: user.company,
+            isAdmin: user.isAdmin
           }
         }
       });
@@ -170,5 +176,31 @@ export const verifyToken = async (req: Request, res: Response) => {
     res.status(200).json();
   } catch (error) {
     res.status(500).json({ error: "Erreur lors de la mise à jour du statut." });
+  }
+};
+
+export const getAdminId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const admin = await User.findOne({
+      email: "tourel.emeric@gmail.com",
+      isAdmin: true
+    }).select("_id");
+
+    if (!admin) {
+      res.status(404).json({ message: "Admin not found" });
+      return;
+    }
+
+    res.status(200).json({ adminId: admin._id });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching admin ID" });
   }
 };

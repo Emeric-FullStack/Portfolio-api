@@ -1,21 +1,20 @@
 // routes/messageRoutes.ts
-import { Router } from "express";
+import express from "express";
+import { authenticateUser } from "../middlewares/authMiddleware";
 import {
-  createMessage,
+  getMessagesWithAdmin,
+  sendMessage,
   getMessages,
-  updateMessage,
-  deleteMessage,
-  getContactsWithMessages
+  getConversations,
+  markAsRead
 } from "../controllers/messageController";
-import { authenticateUser, isMe } from "../middlewares/authMiddleware";
-import { trackUserActivity } from "../middlewares/userTracker";
 
-const router = Router();
+const router = express.Router();
 
-router.post("/", authenticateUser, trackUserActivity, createMessage);
-router.get("/", authenticateUser, isMe, trackUserActivity, getMessages);
-router.put("/:id", authenticateUser, trackUserActivity, updateMessage);
-router.delete("/:id", authenticateUser, trackUserActivity, deleteMessage);
-router.get("/contacts", authenticateUser, isMe, getContactsWithMessages);
+router.post("/", authenticateUser, sendMessage);
+router.get("/conversations", authenticateUser, getConversations);
+router.get("/admin", authenticateUser, getMessagesWithAdmin);
+router.get("/:userId", authenticateUser, getMessages);
+router.patch("/read/:conversationId", authenticateUser, markAsRead);
 
 export default router;

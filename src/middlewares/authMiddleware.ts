@@ -24,11 +24,20 @@ export const authenticateUser = (
     if (!secretKey) {
       throw new Error("JWT_SECRET is not defined in environment variables.");
     }
+
     const decoded = jwt.verify(token, secretKey) as {
       id: string;
       email: string;
+      isAdmin: boolean;
     };
-    req.user = { id: decoded.id, email: decoded.email };
+
+    req.user = {
+      _id: decoded.id,
+      id: decoded.id,
+      email: decoded.email,
+      isAdmin: decoded.isAdmin
+    };
+
     next();
   } catch (error) {
     res.status(403).json({ message: "Invalid or expired token" });
