@@ -82,7 +82,8 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     if (process.env.JWT_SECRET) {
       const user = await User.findOne({ email });
       if (!user) {
-        throw new AppError(404, "User not found");
+        res.status(404).json({ message: "User not found" });
+        return;
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -131,7 +132,8 @@ export const getUserProfile = async (
     const user = await User.findById(req.user.id);
 
     if (!user) {
-      throw new AppError(404, "User not found");
+      res.status(404).json({ message: "User not found" });
+      return;
     }
 
     res.status(200).json({

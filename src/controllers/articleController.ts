@@ -4,12 +4,13 @@ import User from "../models/User";
 import cloudinary from "../config/cloudinaryConfig";
 const mongoose = require("mongoose");
 import multer from "multer";
+import { query, validationResult } from "express-validator";
 
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB max
+    fileSize: 5 * 1024 * 1024,
     files: 1
   },
   fileFilter: (req, file, cb) => {
@@ -26,28 +27,33 @@ export const getArticles = async (
   res: Response
 ): Promise<any> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const tags = req.query.tags ? (req.query.tags as string).split(",") : [];
     const userId = req.user?.id;
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    const articles = await Article.find();
+    const query = tags.length > 0 ? { tags: { $in: tags } } : {};
+    const skip = (page - 1) * limit;
 
     const user = await User.findById(userId);
+    const userLikedArticles = user?.articles_liked || [];
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    const [articles, totalArticles] = await Promise.all([
+      Article.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+      Article.countDocuments(query)
+    ]);
 
-    const articlesWithLikeStatus = articles.map((article) => ({
+    const articlesWithLikes = articles.map((article) => ({
       ...article.toObject(),
-      isLiked: user.articles_liked.some(
-        (likedArticleId) => likedArticleId.toString() === article._id.toString()
-      )
+      isLiked: userLikedArticles.includes(article._id)
     }));
 
-    res.status(200).json(articlesWithLikeStatus);
+    res.status(200).json({
+      articles: articlesWithLikes,
+      currentPage: page,
+      totalArticles,
+      totalPages: Math.ceil(totalArticles / limit)
+    });
   } catch (error) {
     console.error("Erreur lors de la récupération des articles :", error);
     res.status(500).json({ message: "Server error" });
