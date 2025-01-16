@@ -22,38 +22,41 @@ export const sendMessage = async (
     const { content, receiverId } = req.body;
     const senderId = req.user?.id;
 
-    const sanitizedContent = content
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "'");
+    if (!senderId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const sender = await User.findById(senderId);
+    if (!sender) {
+      res.status(404).json({ message: "Sender not found" });
+      return;
+    }
 
     let finalReceiverId = receiverId;
-    if (receiverId === "admin") {
-      const adminUser = await User.findOne({
-        email: "tourel.emeric@gmail.com"
-      });
-      if (!adminUser) {
+
+    // Si ce n'est pas l'admin qui envoie, on cherche l'admin comme destinataire
+    if (!sender.isAdmin) {
+      const admin = await User.findOne({ isAdmin: true });
+      if (!admin) {
         res.status(404).json({ message: "Admin not found" });
         return;
       }
-      finalReceiverId = adminUser._id;
+      finalReceiverId = admin._id;
     }
 
     const newMessage = new Message({
-      content: sanitizedContent,
+      content,
       sender: senderId,
       receiver: finalReceiverId,
-      read: false,
-      createdAt: new Date()
+      read: false
     });
 
-    const savedMessage = await newMessage.save();
-    const populatedMessage = await Message.findById(savedMessage._id)
-      .populate("sender", "firstName lastName email _id")
-      .populate("receiver", "firstName lastName email _id")
-      .lean();
+    await newMessage.save();
+
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate("sender", "firstName lastName")
+      .populate("receiver", "firstName lastName");
 
     res.status(201).json(populatedMessage);
   } catch (error) {
