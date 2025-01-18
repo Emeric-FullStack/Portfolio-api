@@ -12,6 +12,7 @@ export interface IUser extends Document {
   isAdmin: boolean;
   articles_liked: Array<mongoose.Types.ObjectId>;
   lastConnection?: Date;
+  isVerified: boolean;
 }
 
 const UserSchema: Schema = new Schema({
@@ -29,7 +30,8 @@ const UserSchema: Schema = new Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Article"
     }
-  ]
+  ],
+  isVerified: { type: Boolean, default: false }
 });
 
 export default mongoose.model<IUser>("User", UserSchema);

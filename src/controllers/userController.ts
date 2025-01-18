@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { AppError } from "../utils/errorHandler";
+import { emailService } from "../services/emailService";
+import Email from "../models/Email";
 
 const userSchema = z.object({
   firstName: z.string().min(2).max(50),
@@ -40,31 +42,26 @@ export const signupUser = async (
       lastName,
       email,
       password: hashedPassword,
-      company
+      company,
+      isVerified: false
     });
 
-    if (!process.env.JWT_SECRET) {
-      res.status(500).json({ message: "JWT Secret is not configured" });
-      return;
+    await newUser.save();
+
+    try {
+      const emailToken = await emailService.sendConfirmationEmail(email);
+      console.log("Email de confirmation envoyé avec le token:", emailToken);
+    } catch (emailError) {
+      console.error("Erreur lors de l'envoi de l'email:", emailError);
     }
 
-    await newUser.save();
-    const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "10h" }
-    );
-
     res.status(201).json({
+      success: true,
+      message:
+        "Inscription réussie. Veuillez vérifier votre email pour activer votre compte.",
       data: {
-        token,
-        user: {
-          id: newUser._id,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          email: newUser.email,
-          company: newUser.company
-        }
+        email: newUser.email,
+        needsEmailVerification: true
       }
     });
   } catch (error) {
@@ -92,6 +89,14 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
       if (!user) {
         res.status(404).json({ message: "User not found" });
+        return;
+      }
+
+      if (!user.isVerified) {
+        res.status(403).json({
+          message: "Veuillez confirmer votre email avant de vous connecter",
+          needsEmailVerification: true
+        });
         return;
       }
 
@@ -378,5 +383,43 @@ export const updatePassword = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error updating password:", error);
     res.status(500).json({ message: "Error updating password" });
+  }
+};
+
+export const confirmEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    const emailRecord = await Email.findOne({ token, type: "confirmation" });
+
+    if (!emailRecord) {
+      res.status(400).json({ message: "Token invalide ou expiré" });
+      return;
+    }
+
+    // Mettre à jour le statut de vérification de l'utilisateur
+    const updatedUser = await User.findOneAndUpdate(
+      { email: emailRecord.to },
+      { isVerified: true },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({ message: "Utilisateur non trouvé" });
+      return;
+    }
+
+    // Supprimer le token utilisé
+    await Email.deleteOne({ _id: emailRecord._id });
+
+    res.status(200).json({
+      message: "Email confirmé avec succès",
+      success: true
+    });
+  } catch (error) {
+    console.error("Erreur lors de la confirmation de l'email:", error);
+    res.status(500).json({
+      message: "Erreur lors de la confirmation de l'email",
+      success: false
+    });
   }
 };
