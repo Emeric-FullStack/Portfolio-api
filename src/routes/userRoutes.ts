@@ -8,10 +8,13 @@ import {
   getUsersStatus,
   updateUser,
   updatePassword,
-  confirmEmail
+  confirmEmail,
+  resetPassword,
+  confirmResetPassword
 } from "../controllers/userController";
 import { trackUserActivity } from "../middlewares/userTracker";
 import { authenticateUser } from "../middlewares/authMiddleware";
+import { RequestHandler } from "express";
 
 const router = express.Router();
 
@@ -24,5 +27,7 @@ router.get("/status", authenticateUser, getUsersStatus);
 router.put("/update", authenticateUser, updateUser);
 router.put("/update-password", authenticateUser, updatePassword);
 router.post("/confirm-email", confirmEmail);
+router.post("/reset-password", resetPassword);
+router.post("/confirm-reset-password", confirmResetPassword);
 
 export default router;

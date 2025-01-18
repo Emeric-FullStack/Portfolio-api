@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import User from "../models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -420,6 +420,95 @@ export const confirmEmail = async (req: Request, res: Response) => {
     res.status(500).json({
       message: "Erreur lors de la confirmation de l'email",
       success: false
+    });
+  }
+};
+
+export const resetPassword: RequestHandler = async (
+  req,
+  res
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "Aucun compte n'est associé à cette adresse email"
+      });
+      return;
+    }
+
+    await emailService.sendPasswordResetEmail(email);
+
+    res.status(200).json({
+      success: true,
+      message: "Un email de réinitialisation a été envoyé"
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de l'envoi de l'email de réinitialisation"
+    });
+  }
+};
+
+export const confirmResetPassword: RequestHandler = async (
+  req,
+  res
+): Promise<void> => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Vérifier le token
+    const emailRecord = await Email.findOne({
+      token,
+      type: "reset_password",
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!emailRecord) {
+      res.status(400).json({
+        success: false,
+        message: "Token invalide ou expiré"
+      });
+      return;
+    }
+
+    // Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mettre à jour le mot de passe de l'utilisateur
+    const updatedUser = await User.findOneAndUpdate(
+      { email: emailRecord.to },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      res.status(404).json({
+        success: false,
+        message: "Utilisateur non trouvé"
+      });
+      return;
+    }
+
+    // Marquer le token comme utilisé
+    emailRecord.isUsed = true;
+    await emailRecord.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Mot de passe réinitialisé avec succès"
+    });
+  } catch (error) {
+    console.error("Confirm reset password error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Erreur lors de la réinitialisation du mot de passe"
     });
   }
 };

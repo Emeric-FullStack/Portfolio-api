@@ -57,12 +57,13 @@ export class EmailService {
 
   async sendPasswordResetEmail(userEmail: string): Promise<string> {
     const token = this.generateToken();
+    const resetLink = `http://localhost:4200/reset-password/confirm?token=${token}`;
     const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 heure
 
     const html = `
       <h1>Réinitialisation de votre mot de passe</h1>
       <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
-      <a href="${process.env.CLIENT_URL}/reset-password?token=${token}">
+      <a href="${resetLink}" target="_blank">
         Réinitialiser mon mot de passe
       </a>
       <p>Ce lien expire dans 1 heure.</p>
