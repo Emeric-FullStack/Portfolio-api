@@ -2,32 +2,44 @@ import express from "express";
 import {
   signupUser,
   loginUser,
-  getUserProfile,
   verifyToken,
-  getAdminId,
-  getUsersStatus,
   updateUser,
-  updatePassword,
+  getUsersStatus,
   confirmEmail,
   resetPassword,
-  confirmResetPassword
+  confirmResetPassword,
+  updatePassword,
+  getUserProfile,
+  getApiKeys,
+  updateApiKeys,
+  deleteApiKey,
+  checkApiKeys
 } from "../controllers/userController";
-import { trackUserActivity } from "../middlewares/userTracker";
 import { authenticateUser } from "../middlewares/authMiddleware";
-import { RequestHandler } from "express";
+import { trackUserActivity } from "../middlewares/userTracker";
 
 const router = express.Router();
 
-router.get("/verify-token", authenticateUser, trackUserActivity, verifyToken);
+// Routes d'authentification
 router.post("/signup", signupUser);
 router.post("/login", loginUser);
+router.get("/verify-token", authenticateUser, verifyToken);
+router.post("/confirm-email", confirmEmail);
 router.get("/profile", authenticateUser, trackUserActivity, getUserProfile);
-router.get("/admin-id", authenticateUser, getAdminId);
-router.get("/status", authenticateUser, getUsersStatus);
+
+// Routes de gestion du compte
+router.get("/me", authenticateUser);
 router.put("/update", authenticateUser, updateUser);
 router.put("/update-password", authenticateUser, updatePassword);
-router.post("/confirm-email", confirmEmail);
-router.post("/reset-password", resetPassword);
-router.post("/confirm-reset-password", confirmResetPassword);
+router.get("/status", authenticateUser, getUsersStatus);
 
+// Routes de réinitialisation du mot de passe
+router.post("/reset-password", resetPassword);
+router.post("/reset-password/confirm", confirmResetPassword);
+
+// Routes de gestion des clés API
+router.get("/api-keys", authenticateUser, getApiKeys);
+router.get("/api-keys/check", authenticateUser, checkApiKeys);
+router.put("/api-keys", authenticateUser, updateApiKeys);
+router.delete("/api-key/:provider", authenticateUser, deleteApiKey);
 export default router;

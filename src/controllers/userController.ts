@@ -3,9 +3,9 @@ import User from "../models/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
-import { AppError } from "../utils/errorHandler";
 import { emailService } from "../services/emailService";
 import Email from "../models/Email";
+import { decryptApiKey, encryptApiKey } from "../utils/encryption";
 
 const userSchema = z.object({
   firstName: z.string().min(2).max(50),
@@ -510,5 +510,122 @@ export const confirmResetPassword: RequestHandler = async (
       success: false,
       message: "Erreur lors de la réinitialisation du mot de passe"
     });
+  }
+};
+
+export const getApiKeys = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const user = await User.findById(userId).select(
+      "+apiKeys.openai +apiKeys.deepseek"
+    );
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Décrypter les clés avant de les envoyer
+    const openaiKey = user.apiKeys?.openai
+      ? await decryptApiKey(user.apiKeys.openai)
+      : null;
+    const deepseekKey = user.apiKeys?.deepseek
+      ? await decryptApiKey(user.apiKeys.deepseek)
+      : null;
+
+    res.status(200).json({
+      openai: openaiKey,
+      deepseek: deepseekKey
+    });
+  } catch (error) {
+    console.error("Error getting API keys:", error);
+    res.status(500).json({ message: "Error retrieving API keys" });
+  }
+};
+
+export const updateApiKeys = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const { openai, deepseek } = req.body;
+
+    const updates: { [key: string]: string } = {};
+
+    if (openai) {
+      updates["apiKeys.openai"] = encryptApiKey(openai);
+    }
+    if (deepseek) {
+      updates["apiKeys.deepseek"] = encryptApiKey(deepseek);
+    }
+
+    await User.findByIdAndUpdate(userId, { $set: updates });
+
+    res.status(200).json({ message: "API keys updated successfully" });
+    return;
+  } catch (error) {
+    console.error("Error updating API keys:", error);
+    res.status(500).json({ message: "Error updating API keys" });
+    return;
+  }
+};
+
+export const deleteApiKey = async (req: Request, res: Response) => {
+  try {
+    const { provider } = req.params;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    
+    await User.findByIdAndUpdate(
+      userId,
+      { apiKeys: { [provider]: null } },
+      { new: true }
+    );
+  } catch (error) {
+    console.error("Error deleting API key:", error);
+    res.status(500).json({ message: "Error deleting API key" });
+    return;
+  }
+};
+
+export const checkApiKeys = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const user = await User.findById(userId).select(
+      "+apiKeys.openai +apiKeys.deepseek"
+    );
+
+    if (!user) {
+      res.status(404).json({ message: "Utilisateur non trouvé" });
+      return;
+    }
+
+    res.json({
+      hasOpenAI: !!user.apiKeys?.openai,
+      hasDeepseek: !!user.apiKeys?.deepseek
+    });
+    return;
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+    return;
   }
 };

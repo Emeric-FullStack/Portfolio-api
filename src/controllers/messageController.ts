@@ -70,7 +70,7 @@ export const getMessagesWithAdmin = async (
   res: Response
 ): Promise<void> => {
   try {
-    const userId = new mongoose.Types.ObjectId(req.user?.id);
+    const userId = new mongoose.Types.ObjectId(`${req.user?.id}`);
     const adminUser = await User.findOne({ email: "tourel.emeric@gmail.com" });
 
     if (!adminUser) {
@@ -126,12 +126,12 @@ export const getMessages = async (
     const messages = await Message.find({
       $or: [
         {
-          sender: new mongoose.Types.ObjectId(userId),
-          receiver: new mongoose.Types.ObjectId(withUserId)
+          sender: new mongoose.Types.ObjectId(`${userId}`),
+          receiver: new mongoose.Types.ObjectId(`${withUserId}`)
         },
         {
-          sender: new mongoose.Types.ObjectId(withUserId),
-          receiver: new mongoose.Types.ObjectId(userId)
+          sender: new mongoose.Types.ObjectId(`${withUserId}`),
+          receiver: new mongoose.Types.ObjectId(`${userId}`)
         }
       ]
     })
@@ -175,8 +175,8 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
       {
         $match: {
           $or: [
-            { sender: new mongoose.Types.ObjectId(userId) },
-            { receiver: new mongoose.Types.ObjectId(userId) }
+            { sender: new mongoose.Types.ObjectId(`${userId}`) },
+            { receiver: new mongoose.Types.ObjectId(`${userId}`) }
           ]
         }
       },
@@ -189,7 +189,9 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
         $group: {
           _id: {
             $cond: {
-              if: { $eq: ["$sender", new mongoose.Types.ObjectId(userId)] },
+              if: {
+                $eq: ["$sender", new mongoose.Types.ObjectId(`${userId}`)]
+              },
               then: "$receiver",
               else: "$sender"
             }
@@ -200,7 +202,12 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
               $cond: [
                 {
                   $and: [
-                    { $eq: ["$receiver", new mongoose.Types.ObjectId(userId)] },
+                    {
+                      $eq: [
+                        "$receiver",
+                        new mongoose.Types.ObjectId(`${userId}`)
+                      ]
+                    },
                     { $eq: ["$read", false] }
                   ]
                 },

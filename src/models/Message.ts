@@ -1,7 +1,5 @@
-// models/Message.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-// Interface de base pour un message
 interface IMessageBase {
   content: string;
   sender: Types.ObjectId;
@@ -10,10 +8,8 @@ interface IMessageBase {
   createdAt: Date;
 }
 
-// Interface pour le document Mongoose
 export interface IMessage extends IMessageBase, Document {}
 
-// Interface pour un message après population
 export interface IMessagePopulated
   extends Omit<IMessage, "sender" | "receiver"> {
   sender: {

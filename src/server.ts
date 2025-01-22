@@ -4,17 +4,15 @@ import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import Message, { IMessagePopulated } from "./models/Message";
-import { Document, Types } from "mongoose";
+import { IMessagePopulated } from "./models/Message";
 import messageRoutes from "./routes/messageRoutes";
-import User, { IUser } from "./models/User";
 import rateLimit from "express-rate-limit";
 
 interface MessageDocument extends Document {
-  _id: Types.ObjectId;
+  _id: mongoose.Types.ObjectId;
   content: string;
-  sender: Types.ObjectId;
-  receiver: Types.ObjectId;
+  sender: mongoose.Types.ObjectId;
+  receiver: mongoose.Types.ObjectId;
   read: boolean;
   createdAt: Date;
 }

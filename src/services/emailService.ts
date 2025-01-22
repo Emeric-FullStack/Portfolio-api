@@ -3,7 +3,7 @@ import Email from "../models/Email";
 import crypto from "crypto";
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -34,7 +34,7 @@ export class EmailService {
 
     const emailData = {
       to: userEmail,
-      from: process.env.SMTP_FROM || "noreply@votreapp.com",
+      from: process.env.SMTP_FROM ?? "noreply@votreapp.com",
       subject: "Confirmation de votre compte",
       html,
       type: "confirmation" as const,
@@ -71,7 +71,7 @@ export class EmailService {
 
     const emailData = {
       to: userEmail,
-      from: process.env.SMTP_FROM || "noreply@votreapp.com",
+      from: process.env.SMTP_FROM ?? "noreply@votreapp.com",
       subject: "Réinitialisation de votre mot de passe",
       html,
       type: "reset_password" as const,

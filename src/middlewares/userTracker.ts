@@ -10,8 +10,8 @@ export const trackUserActivity = async (
   try {
     if (req.user) {
       const ipAddress =
-        req.headers["x-forwarded-for"] || req.socket.remoteAddress || "";
-      const userAgent = req.headers["user-agent"] || "";
+        req.headers["x-forwarded-for"] ?? req.socket.remoteAddress ?? "";
+      const userAgent = req.headers["user-agent"] ?? "";
 
       const log = new UserLog({
         userId: req.user.id, // Utilisateur connecté

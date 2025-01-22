@@ -4,7 +4,6 @@ import User from "../models/User";
 import cloudinary from "../config/cloudinaryConfig";
 const mongoose = require("mongoose");
 import multer from "multer";
-import { query, validationResult } from "express-validator";
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -14,7 +13,8 @@ const upload = multer({
     files: 1
   },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.match(/^image\/(jpeg|png|gif)$/)) {
+    const imageTypeRegex = /^image\/(jpeg|png|gif)$/;
+    if (!imageTypeRegex.exec(file.mimetype)) {
       cb(new Error("Only image files are allowed!"));
       return;
     }

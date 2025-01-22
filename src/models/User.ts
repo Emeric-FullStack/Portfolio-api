@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { encryptApiKey } from "../utils/encryption";
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -13,6 +14,10 @@ export interface IUser extends Document {
   articles_liked: Array<mongoose.Types.ObjectId>;
   lastConnection?: Date;
   isVerified: boolean;
+  apiKeys: {
+    openai: string;
+    deepseek: string;
+  };
 }
 
 const UserSchema: Schema = new Schema({
@@ -31,7 +36,21 @@ const UserSchema: Schema = new Schema({
       ref: "Article"
     }
   ],
-  isVerified: { type: Boolean, default: false }
+  isVerified: { type: Boolean, default: false },
+  apiKeys: {
+    openai: { type: String, select: true },
+    deepseek: { type: String, select: true }
+  }
+});
+
+UserSchema.pre("save", async function (this: IUser & Document, next) {
+  if (this.isModified("apiKeys.openai")) {
+    this.apiKeys.openai = encryptApiKey(this.apiKeys.openai);
+  }
+  if (this.isModified("apiKeys.deepseek")) {
+    this.apiKeys.deepseek = encryptApiKey(this.apiKeys.deepseek);
+  }
+  next();
 });
 
 export default mongoose.model<IUser>("User", UserSchema);

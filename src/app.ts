@@ -9,6 +9,7 @@ import { loggerMiddleware } from "./middlewares/loggerMiddleware";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { handleError } from "./utils/errorHandler";
+import aiRoutes from "./routes/aiRoutes";
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(loggerMiddleware);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/articles", articleRoutes);
+app.use("/api/ai", aiRoutes);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
