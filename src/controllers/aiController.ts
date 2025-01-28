@@ -1,17 +1,14 @@
-import { RequestHandler, Response } from "express";
+import { RequestHandler, Response as ExpressResponse } from "express";
 import { OpenAI } from "openai";
 import axios from "axios";
 import User from "../models/User";
 import { decryptApiKey } from "../utils/encryption";
 import { processAttachments } from "../utils/fileProcessor";
+import AiChatHistory from "../models/AiChatHistory";
 
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
-const handleApiError = (
-  error: any,
-  model: string,
-  res: Response<any, Record<string, any>>
-) => {
+const handleApiError = (error: any, model: string, res: ExpressResponse) => {
   if (error.status === 401 || error.error?.code === "invalid_api_key") {
     res.status(401).json({ message: `Clé API ${model} invalide` });
   } else if (error.status === 429) {
@@ -57,7 +54,7 @@ const handleDeepseekPrompt = async (apiKey: string, content: string) => {
 export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
   try {
     const userId = req.user?._id;
-    const { content, model } = req.body;
+    const { content, model, conversationId } = req.body;
     const files = req.files as Express.Multer.File[];
 
     console.log("Processing request for model:", model);
@@ -85,9 +82,43 @@ export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
           ? await handleOpenAIPrompt(apiKey, processedContent)
           : await handleDeepseekPrompt(apiKey, processedContent);
 
-      res.json({ content: response });
+      // Chercher une conversation existante ou en créer une nouvelle
+      let chatHistory;
+      if (conversationId) {
+        chatHistory = await AiChatHistory.findById(conversationId);
+      }
+
+      if (!chatHistory) {
+        chatHistory = new AiChatHistory({
+          userId,
+          model,
+          messages: []
+        });
+      }
+
+      // Ajouter les nouveaux messages
+      chatHistory.messages.push(
+        {
+          content,
+          isUser: true,
+          timestamp: new Date(),
+          model
+        },
+        {
+          content: response,
+          isUser: false,
+          timestamp: new Date(),
+          model
+        }
+      );
+
+      await chatHistory.save();
+      res.json({
+        content: response,
+        conversationId: chatHistory._id
+      });
     } catch (error: any) {
-      handleApiError(error, model, res as Response<any, Record<string, any>>);
+      handleApiError(error, model, res);
     }
   } catch (error: any) {
     console.error("AI Error full details:", error);

@@ -28,7 +28,6 @@ router.post("/confirm-email", confirmEmail);
 router.get("/profile", authenticateUser, trackUserActivity, getUserProfile);
 
 // Routes de gestion du compte
-router.get("/me", authenticateUser);
 router.put("/update", authenticateUser, updateUser);
 router.put("/update-password", authenticateUser, updatePassword);
 router.get("/status", authenticateUser, getUsersStatus);

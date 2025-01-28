@@ -169,7 +169,11 @@ export const getUserProfile = async (
   }
 };
 
-export const verifyToken = async (req: Request, res: Response) => {
+export const verifyToken: RequestHandler = async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
   try {
     if (!req.user) {
       res.status(401).json({ message: "Unauthorized" });
@@ -591,7 +595,7 @@ export const deleteApiKey = async (req: Request, res: Response) => {
       res.status(404).json({ message: "User not found" });
       return;
     }
-    
+
     await User.findByIdAndUpdate(
       userId,
       { apiKeys: { [provider]: null } },
@@ -608,6 +612,11 @@ export const checkApiKeys = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  // Ajout des headers no-cache
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
   try {
     const userId = req.user?._id;
     const user = await User.findById(userId).select(
@@ -620,8 +629,8 @@ export const checkApiKeys = async (
     }
 
     res.json({
-      hasOpenAI: !!user.apiKeys?.openai,
-      hasDeepseek: !!user.apiKeys?.deepseek
+      openai: !!user.apiKeys?.openai,
+      deepseek: !!user.apiKeys?.deepseek
     });
     return;
   } catch (error) {

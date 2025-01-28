@@ -19,11 +19,14 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
+
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/ai", aiRoutes);
 
+// Sécurité
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
@@ -32,6 +35,7 @@ const limiter = rateLimit({
 app.use(helmet());
 app.use(limiter);
 
+// Gestion des erreurs
 app.use(
   (
     err: Error,
