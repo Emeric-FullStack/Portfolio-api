@@ -180,7 +180,6 @@ export const verifyToken: RequestHandler = async (req, res) => {
       return;
     }
 
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     const user = await User.findById(req.user.id);
 
     if (!user) {
@@ -188,39 +187,23 @@ export const verifyToken: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Mise à jour de la dernière connexion
     await User.findByIdAndUpdate(req.user.id, {
       lastConnection: new Date()
     });
 
-    if (user.isAdmin) {
-      const users = await User.find(
-        { isAdmin: false },
-        { _id: 1, lastConnection: 1 }
-      );
-
-      const connectedUsers = users.map((u) => ({
-        userId: u._id,
-        online: u.lastConnection && u.lastConnection > tenMinutesAgo
-      }));
-
-      res.status(200).json({ users: connectedUsers });
-    } else {
-      const admin = await User.findOne(
-        { isAdmin: true },
-        { _id: 1, lastConnection: 1 }
-      );
-
-      if (!admin) {
-        res.status(404).json({ message: "Admin not found" });
-        return;
+    // Retourne simplement les informations de l'utilisateur
+    res.status(200).json({
+      user: {
+        id: user._id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        firstName: user.firstName,
+        lastName: user.lastName
       }
-
-      res.status(200).json({
-        online: admin.lastConnection && admin.lastConnection > tenMinutesAgo
-      });
-    }
+    });
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la mise à jour du statut." });
+    res.status(500).json({ error: "Erreur lors de la vérification du token." });
   }
 };
 

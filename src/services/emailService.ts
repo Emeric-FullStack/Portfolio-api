@@ -27,7 +27,7 @@ export class EmailService {
       <h1>Confirmez votre adresse email</h1>
       <p>Cliquez sur le lien ci-dessous pour confirmer votre compte :</p>
       <a href="${confirmationLink}" target="_blank">
-        Confirmer mon email
+        Confirmer mon emailÒ
       </a>
       <p>Ce lien expire dans 24 heures.</p>
     `;

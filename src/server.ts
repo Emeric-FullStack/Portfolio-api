@@ -167,3 +167,13 @@ if (
 } else {
   console.error("Missing required environment variables");
 }
+
+// Gestion des erreurs non capturées
+process.on('unhandledRejection', (error) => {
+    console.error('🔥 Erreur non gérée:', error);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('🔥 Exception non capturée:', error);
+    process.exit(1);
+});

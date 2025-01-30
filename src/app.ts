@@ -15,7 +15,18 @@ dotenv.config();
 
 const app = express();
 
+// Sécurité d'abord
+app.use(helmet());
 app.use(cors());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use(limiter);
+
+// Middlewares standards
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(loggerMiddleware);
@@ -26,25 +37,14 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/ai", aiRoutes);
 
-// Sécurité
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+// Route de test simple
+app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
 });
 
-app.use(helmet());
-app.use(limiter);
-
 // Gestion des erreurs
-app.use(
-  (
-    err: Error,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) => {
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     handleError(err, res);
-  }
-);
+});
 
 export default app;

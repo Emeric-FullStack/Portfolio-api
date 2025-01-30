@@ -20,25 +20,29 @@ import { trackUserActivity } from "../middlewares/userTracker";
 
 const router = express.Router();
 
-// Routes d'authentification
+// Routes publiques
 router.post("/signup", signupUser);
 router.post("/login", loginUser);
-router.get("/verify-token", authenticateUser, verifyToken);
 router.post("/confirm-email", confirmEmail);
-router.get("/profile", authenticateUser, trackUserActivity, getUserProfile);
-
-// Routes de gestion du compte
-router.put("/update", authenticateUser, updateUser);
-router.put("/update-password", authenticateUser, updatePassword);
-router.get("/status", authenticateUser, getUsersStatus);
-
-// Routes de réinitialisation du mot de passe
 router.post("/reset-password", resetPassword);
 router.post("/reset-password/confirm", confirmResetPassword);
 
-// Routes de gestion des clés API
-router.get("/api-keys", authenticateUser, getApiKeys);
-router.get("/api-keys/check", authenticateUser, checkApiKeys);
-router.put("/api-keys", authenticateUser, updateApiKeys);
-router.delete("/api-key/:provider", authenticateUser, deleteApiKey);
+// Routes authentifiées
+router.use(authenticateUser);
+
+// Routes de profil
+router.get("/profile", trackUserActivity, getUserProfile);
+router.put("/update", updateUser);
+router.put("/update-password", updatePassword);
+
+// Routes de statut
+router.get("/verify-token", verifyToken);
+router.get("/status", getUsersStatus);
+
+// Routes API keys
+router.get("/api-keys", getApiKeys);
+router.get("/api-keys/check", checkApiKeys);
+router.put("/api-keys", updateApiKeys);
+router.delete("/api-key/:provider", deleteApiKey);
+
 export default router;
