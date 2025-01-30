@@ -17,6 +17,7 @@ import {
 } from "../controllers/userController";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import { trackUserActivity } from "../middlewares/userTracker";
+import { disableCache } from "../middlewares/cacheControl";
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ router.get("/verify-token", verifyToken);
 router.get("/status", getUsersStatus);
 
 // Routes API keys
-router.get("/api-keys", getApiKeys);
+router.get("/api-keys", disableCache, getApiKeys);
 router.get("/api-keys/check", checkApiKeys);
 router.put("/api-keys", updateApiKeys);
 router.delete("/api-key/:provider", deleteApiKey);
