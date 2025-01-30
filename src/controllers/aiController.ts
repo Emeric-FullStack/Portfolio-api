@@ -29,7 +29,16 @@ const handleOpenAIPrompt = async (apiKey: string, content: string) => {
   const openai = new OpenAI({ apiKey });
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
-    messages: [{ role: "user", content }]
+    messages: [
+      {
+        role: "system",
+        content: "Tu es un assistant spécialisé dans la génération de code propre et bien formaté. Toujours répondre avec un format clair : " +
+          "- Si la réponse inclut du code, utilise des blocs Markdown(```language\\ncode```). " +
+          "- Ajoute une ligne '```plaintext' avant tout contenu de texte non exécutable. " +
+          "- Indente correctement le code."
+      },
+      { role: "user", content }
+    ]
   });
   return completion.choices[0].message.content;
 };
@@ -69,8 +78,8 @@ export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
 
     const processedContent = files?.length
       ? `${content}\n\nContenu des fichiers:\n${await processAttachments(
-          files
-        )}`
+        files
+      )}`
       : content;
 
     try {
@@ -81,42 +90,38 @@ export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
         model === "openai"
           ? await handleOpenAIPrompt(apiKey, processedContent)
           : await handleDeepseekPrompt(apiKey, processedContent);
-
-      // Chercher une conversation existante ou en créer une nouvelle
-      let chatHistory;
-      if (conversationId) {
-        chatHistory = await AiChatHistory.findById(conversationId);
-      }
-
-      if (!chatHistory) {
-        chatHistory = new AiChatHistory({
-          userId,
-          model,
-          messages: []
-        });
-      }
-
-      // Ajouter les nouveaux messages
-      chatHistory.messages.push(
-        {
-          content,
-          isUser: true,
-          timestamp: new Date(),
-          model
-        },
-        {
+      if (userId) {
+        // Créer une nouvelle conversation ou ajouter à une existante
+        const conversation = await AiChatHistory.findOneAndUpdate(
+          {
+            userId: userId,
+            model: req.body.model,
+            createdAt: {
+              $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Conversation du jour
+            }
+          },
+          {
+            $push: {
+              messages: [
+                { content: req.body.content, isUser: true },
+                { content: response, isUser: false }
+              ]
+            }
+          },
+          {
+            upsert: true,
+            new: true
+          }
+        );
+        res.json({
           content: response,
-          isUser: false,
-          timestamp: new Date(),
-          model
-        }
-      );
+          conversationId: conversation._id
+        });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
 
-      await chatHistory.save();
-      res.json({
-        content: response,
-        conversationId: chatHistory._id
-      });
+
     } catch (error: any) {
       handleApiError(error, model, res);
     }
