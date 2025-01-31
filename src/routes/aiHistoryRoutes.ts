@@ -3,7 +3,9 @@ import { authenticateUser } from "../middlewares/authMiddleware";
 import {
   saveChat,
   getChatHistory,
-  deleteChat
+  deleteChat,
+  getConversations,
+  getConversation
 } from "../controllers/aiHistoryController";
 
 const router = express.Router();
@@ -11,5 +13,7 @@ const router = express.Router();
 router.post("/", authenticateUser, saveChat);
 router.get("/", authenticateUser, getChatHistory);
 router.delete("/:id", authenticateUser, deleteChat);
+router.get("/conversations", authenticateUser, getConversations);
+router.get("/conversations/:id", authenticateUser, getConversation);
 
 export default router;

@@ -73,3 +73,27 @@ export const deleteChat = async (
     res.status(500).json({ message: "Error deleting chat history" });
   }
 };
+
+export const getConversations = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    console.log("userId", userId);
+    const conversations = await AiChatHistory.find({ userId });
+    res.status(200).json(conversations);
+  } catch (error) {
+    console.error("Error retrieving conversations:", error);
+    res.status(500).json({ message: "Error retrieving conversations" });
+  }
+};
+
+export const getConversation = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const conversationId = req.params.id;
+    const conversation = await AiChatHistory.findOne({ _id: conversationId, userId });
+    res.status(200).json(conversation);
+  } catch (error) {
+    console.error("Error retrieving conversation:", error);
+    res.status(500).json({ message: "Error retrieving conversation" });
+  }
+};
