@@ -124,9 +124,13 @@ export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
 
     // Sauvegarder dans la conversation
     if (!conversation) {
+      // Extraire la première phrase du contenu (jusqu'au premier point ou retour à la ligne)
+      const title = processedContent.split(/[.?\n]/)[0].trim();
+
       conversation = new AiChatHistory({
         userId,
         model,
+        title: title.length > 50 ? title.substring(0, 50) + '...' : title,
         messages: [
           { content: processedContent, isUser: true },
           { content: response, isUser: false }
