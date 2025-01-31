@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post("/", authenticateUser, saveChat);
 router.get("/", authenticateUser, getChatHistory);
-router.delete("/:id", authenticateUser, deleteChat);
+router.delete("/conversations/:id", authenticateUser, deleteChat);
 router.get("/conversations", authenticateUser, getConversations);
 router.get("/conversations/:id", authenticateUser, getConversation);
 

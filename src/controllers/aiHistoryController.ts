@@ -25,23 +25,15 @@ export const getChatHistory = async (
 ): Promise<void> => {
   try {
     const userId = req.user?._id;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page - 1) * limit;
 
-    const [chats, total] = await Promise.all([
+    const chats = await Promise.all([
       AiChatHistory.find({ userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+        .sort({ createdAt: -1 }),
       AiChatHistory.countDocuments({ userId })
     ]);
 
     res.status(200).json({
-      chats,
-      currentPage: page,
-      totalPages: Math.ceil(total / limit),
-      totalChats: total
+      chats
     });
   } catch (error) {
     console.error("Error retrieving chat history:", error);
@@ -56,7 +48,7 @@ export const deleteChat = async (
   try {
     const userId = req.user?._id;
     const chatId = req.params.id;
-
+  
     const chat = await AiChatHistory.findOneAndDelete({
       _id: chatId,
       userId

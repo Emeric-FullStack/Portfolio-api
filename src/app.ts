@@ -47,8 +47,8 @@ app.use(loggerMiddleware);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/articles", articleRoutes);
-app.use("/api/ai", aiRoutes);
 app.use("/api/ai/history", aiHistoryRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Route de test simple
 app.get("/api/health", (req, res) => {
