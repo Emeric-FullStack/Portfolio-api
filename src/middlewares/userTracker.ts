@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import UserLog from "../models/UserLog";
+import UserLog from "../models/UserLog.model";
 
 // Middleware pour tracker uniquement les utilisateurs connectés
 export const trackUserActivity = async (req: Request, res: Response, next: NextFunction) => {

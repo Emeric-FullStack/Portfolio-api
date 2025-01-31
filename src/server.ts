@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
-import { IMessagePopulated } from "./models/Message";
+import { IMessagePopulated } from "./models/Message.model";
 import messageRoutes from "./routes/messageRoutes";
 import rateLimit from "express-rate-limit";
 
@@ -170,10 +170,10 @@ if (
 
 // Gestion des erreurs non capturées
 process.on('unhandledRejection', (error) => {
-    console.error('🔥 Erreur non gérée:', error);
+  console.error('🔥 Erreur non gérée:', error);
 });
 
 process.on('uncaughtException', (error) => {
-    console.error('🔥 Exception non capturée:', error);
-    process.exit(1);
+  console.error('🔥 Exception non capturée:', error);
+  process.exit(1);
 });

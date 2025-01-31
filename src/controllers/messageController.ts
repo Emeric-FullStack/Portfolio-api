@@ -1,7 +1,7 @@
 // controllers/messageController.ts
 import { Request, Response } from "express";
-import Message, { IMessagePopulated } from "../models/Message";
-import User from "../models/User";
+import Message, { IMessagePopulated } from "../models/Message.model";
+import User from "../models/User.model";
 import mongoose, { Types } from "mongoose";
 
 interface ConversationAggregation {

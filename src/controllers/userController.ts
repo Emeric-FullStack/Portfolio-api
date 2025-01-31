@@ -1,10 +1,10 @@
 import { Request, RequestHandler, Response } from "express";
-import User from "../models/User";
+import User from "../models/User.model";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { emailService } from "../services/emailService";
-import Email from "../models/Email";
+import Email from "../models/Email.model";
 import { decryptApiKey, encryptApiKey } from "../utils/encryption";
 
 const userSchema = z.object({

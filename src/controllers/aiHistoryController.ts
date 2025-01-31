@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import AiChatHistory from "../models/AiChatHistory";
+import AiChatHistory from "../models/AiChatHistory.model";
 
 export const saveChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -48,7 +48,7 @@ export const deleteChat = async (
   try {
     const userId = req.user?._id;
     const chatId = req.params.id;
-  
+
     const chat = await AiChatHistory.findOneAndDelete({
       _id: chatId,
       userId

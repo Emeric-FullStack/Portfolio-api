@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer";
-import Email from "../models/Email";
+import Email from "../models/Email.model";
 import crypto from "crypto";
 
 export class EmailService {
