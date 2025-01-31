@@ -5,50 +5,67 @@ import User from "../models/User";
 import { decryptApiKey } from "../utils/encryption";
 import { processAttachments } from "../utils/fileProcessor";
 import AiChatHistory from "../models/AiChatHistory";
+import { ChatCompletionMessageParam } from "openai/resources/chat";
 
 const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
-const handleApiError = (error: any, model: string, res: ExpressResponse) => {
-  if (error.status === 401 || error.error?.code === "invalid_api_key") {
-    res.status(401).json({ message: `Clé API ${model} invalide` });
-  } else if (error.status === 429) {
-    res.status(429).json({ message: `Quota ${model} dépassé` });
-  } else if (
-    error.status === 402 ||
-    error.error?.code === "insufficient_quota"
-  ) {
-    res
-      .status(402)
-      .json({ message: `Veuillez créditer votre compte ${model}` });
-  } else {
-    throw error;
-  }
+type ChatMessage = {
+  role: "user" | "assistant" | "system";
+  content: string;
 };
 
-const handleOpenAIPrompt = async (apiKey: string, content: string) => {
+const handleApiError = (error: any, model: string, res: ExpressResponse) => {
+  console.error(`${model} API Error:`, error);
+
+  // OpenAI specific errors
+  if (error.response?.data?.error) {
+    const apiError = error.response.data.error;
+    if (apiError.code === 'invalid_api_key') {
+      return res.status(401).json({ message: `Clé API ${model} invalide` });
+    }
+    if (apiError.code === 'insufficient_quota') {
+      return res.status(402).json({ message: `Quota ${model} dépassé` });
+    }
+    return res.status(400).json({ message: apiError.message });
+  }
+
+  // Deepseek specific errors
+  if (error.response?.status === 401) {
+    return res.status(401).json({ message: `Clé API ${model} invalide` });
+  }
+  if (error.response?.status === 429) {
+    return res.status(429).json({ message: `Quota ${model} dépassé` });
+  }
+
+  throw error;
+};
+
+const handleOpenAIPrompt = async (apiKey: string, messages: Array<{ role: "user" | "assistant" | "system", content: string }>) => {
   const openai = new OpenAI({ apiKey });
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     messages: [
       {
         role: "system",
-        content: "Tu es un assistant spécialisé dans la génération de code propre et bien formaté. Toujours répondre avec un format clair : " +
-          "- Si la réponse inclut du code, utilise des blocs Markdown(```language\\ncode```). " +
-          "- Ajoute une ligne '```plaintext' avant tout contenu de texte non exécutable. " +
-          "- Indente correctement le code."
+        content: "Tu es un assistant spécialisé dans la génération de code propre et bien formaté. Tu as accès à l'historique complet de la conversation et tu dois l'utiliser pour maintenir le contexte. Format des réponses : utiliser des blocs Markdown(```language\\ncode```) pour le code et '```plaintext' pour le texte."
       },
-      { role: "user", content }
+      ...messages as ChatCompletionMessageParam[]
     ]
   });
   return completion.choices[0].message.content;
 };
 
-const handleDeepseekPrompt = async (apiKey: string, content: string) => {
+const handleDeepseekPrompt = async (apiKey: string, messages: Array<{ role: "user" | "assistant" | "system", content: string }>) => {
+  // Deepseek n'accepte que les rôles "user" et "assistant"
+  const filteredMessages = messages.filter(msg => msg.role !== "system");
+
   const { data } = await axios.post(
     DEEPSEEK_API_URL,
     {
-      messages: [{ role: "user", content }],
-      model: "deepseek-chat"
+      messages: filteredMessages,
+      model: "deepseek-chat",
+      temperature: 0.7,
+      max_tokens: 2000
     },
     {
       headers: {
@@ -57,79 +74,77 @@ const handleDeepseekPrompt = async (apiKey: string, content: string) => {
       }
     }
   );
+
   return data.choices[0].message.content;
 };
 
 export const handlePrompt: RequestHandler = async (req, res): Promise<void> => {
+  const { model } = req.body as { model: 'openai' | 'deepseek' };
   try {
     const userId = req.user?._id;
-    const { content, model, conversationId } = req.body;
+    const { content, conversationId } = req.body as {
+      content: string;
+      conversationId?: string
+    };
     const files = req.files as Express.Multer.File[];
 
-    console.log("Processing request for model:", model);
+    // Traiter le contenu avec les fichiers
+    const processedContent = files?.length
+      ? `${content}\n\nContenu des fichiers:\n${await processAttachments(files)}`
+      : content;
 
-    const user = await User.findById(userId).select(
-      "+apiKeys.openai +apiKeys.deepseek"
-    );
+    // Récupérer l'historique
+    let conversation;
+    let messageHistory: ChatMessage[] = [];
+
+    // Récupérer l'utilisateur
+    const user = await User.findById(userId).select("+apiKeys.openai +apiKeys.deepseek");
     if (!user) {
       res.status(404).json({ message: "Utilisateur non trouvé" });
       return;
     }
 
-    const processedContent = files?.length
-      ? `${content}\n\nContenu des fichiers:\n${await processAttachments(
-        files
-      )}`
-      : content;
-
-    try {
-      const apiKey = await decryptApiKey(
-        user.apiKeys[model as keyof typeof user.apiKeys]
-      );
-      const response =
-        model === "openai"
-          ? await handleOpenAIPrompt(apiKey, processedContent)
-          : await handleDeepseekPrompt(apiKey, processedContent);
-      if (userId) {
-        // Créer une nouvelle conversation ou ajouter à une existante
-        const conversation = await AiChatHistory.findOneAndUpdate(
-          {
-            userId: userId,
-            model: req.body.model,
-            createdAt: {
-              $gte: new Date(new Date().setHours(0, 0, 0, 0)) // Conversation du jour
-            }
-          },
-          {
-            $push: {
-              messages: [
-                { content: req.body.content, isUser: true },
-                { content: response, isUser: false }
-              ]
-            }
-          },
-          {
-            upsert: true,
-            new: true
-          }
-        );
-        res.json({
-          content: response,
-          conversationId: conversation._id
-        });
-      } else {
-        res.status(404).json({ message: "User not found" });
+    if (conversationId) {
+      conversation = await AiChatHistory.findOne({ _id: conversationId, userId });
+      if (conversation) {
+        messageHistory = conversation.messages.map(msg => ({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.content
+        }));
       }
-
-
-    } catch (error: any) {
-      handleApiError(error, model, res);
     }
-  } catch (error: any) {
-    console.error("AI Error full details:", error);
-    res.status(500).json({
-      message: "Une erreur est survenue lors de la génération de la réponse",
-      details: error.message
+
+    // Ajouter le nouveau message avec le contenu traité
+    messageHistory.push({ role: 'user', content: processedContent });
+
+    const apiKey = await decryptApiKey(user.apiKeys[model]);
+    const response = model === "openai"
+      ? await handleOpenAIPrompt(apiKey, messageHistory)
+      : await handleDeepseekPrompt(apiKey, messageHistory);
+
+    // Sauvegarder dans la conversation
+    if (!conversation) {
+      conversation = new AiChatHistory({
+        userId,
+        model,
+        messages: [
+          { content: processedContent, isUser: true },
+          { content: response, isUser: false }
+        ]
+      });
+    } else {
+      conversation.messages.push(
+        { content: processedContent, isUser: true },
+        { content: response, isUser: false }
+      );
+    }
+    await conversation.save();
+
+    res.json({
+      content: response,
+      conversationId: conversation._id
     });
+  } catch (error: any) {
+    handleApiError(error, model, res);
   }
 };
