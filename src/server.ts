@@ -5,7 +5,7 @@ import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { IMessagePopulated } from "./models/Message.model";
-import messageRoutes from "./routes/messageRoutes";
+import messageRoutes from "./routes/message.routes";
 import rateLimit from "express-rate-limit";
 
 interface MessageDocument extends Document {

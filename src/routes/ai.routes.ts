@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { handlePrompt } from "../controllers/aiController";
+import { handlePrompt } from "../controllers/aiChat.controller";
 import { authenticateUser } from "../middlewares/authMiddleware";
 
 const router = express.Router();

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Article from "../models/Article.model";
-import User from "../models/User.model";
+import { User } from "../models/User.model";
 import cloudinary from "../config/cloudinaryConfig";
 const mongoose = require("mongoose");
 import multer from "multer";

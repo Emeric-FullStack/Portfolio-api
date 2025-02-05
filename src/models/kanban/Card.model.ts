@@ -1,39 +1,48 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Types } from "mongoose";
 import { IComment } from "./Comment.model";
+import { IChecklist } from "./Checklist.model";
 
-interface ICard extends Document {
-    title: string;
-    description?: string;
-    list: Schema.Types.ObjectId;
-    board: Schema.Types.ObjectId;
-    position: number;
-    dueDate?: Date;
-    assignedTo?: Schema.Types.ObjectId[];
-    labels?: string[];
-    comments?: IComment[];
-    createdAt: Date;
-    updatedAt: Date;
+export enum CardPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high'
 }
 
-const CardSchema = new Schema<ICard>(
-    {
-        title: { type: String, required: true },
-        description: { type: String },
-        list: { type: Schema.Types.ObjectId, ref: "List", required: true },
-        board: { type: Schema.Types.ObjectId, ref: "Board", required: true },
-        position: { type: Number, required: true }, // Position dans la liste
-        dueDate: { type: Date },
-        assignedTo: [{ type: Schema.Types.ObjectId, ref: "User" }],
-        labels: [{ type: String }], // Étiquettes de la carte
-        comments: [
-            {
-                user: { type: Schema.Types.ObjectId, ref: "User" },
-                text: { type: String },
-                createdAt: { type: Date, default: Date.now },
-            },
-        ],
-    },
-    { timestamps: true }
-);
+export interface ICard {
+  _id: string;
+  title: string;
+  description?: string;
+  listId: string;
+  boardId: string;
+  position: number;
+  priority?: CardPriority;
+  labels?: string[];
+  comments?: IComment[];
+  createdAt: Date;
+  updatedAt: Date;
+  dueDate?: Date;
+  assignedTo?: string;
+  checklists?: Types.ObjectId[];
+}
+
+const CardSchema = new Schema<ICard>({
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  listId: { type: String, required: true },
+  boardId: { type: String, required: true },
+  position: { type: Number, required: true },
+  priority: { 
+    type: String, 
+    enum: Object.values(CardPriority),
+    default: CardPriority.MEDIUM 
+  },
+  labels: [{ type: Schema.Types.ObjectId, ref: 'Label' }],
+  comments: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
+  dueDate: { type: Date },
+  assignedTo: { type: String },
+  checklists: [{ type: Schema.Types.ObjectId, ref: 'Checklist' }]
+}, {
+  timestamps: true
+});
 
 export const Card = model<ICard>("Card", CardSchema);

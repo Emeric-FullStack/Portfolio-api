@@ -6,7 +6,7 @@ import {
   deleteChat,
   getConversations,
   getConversation
-} from "../controllers/aiHistoryController";
+} from "../controllers/aiHistory.controller";
 
 const router = express.Router();
 

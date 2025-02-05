@@ -2,15 +2,16 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import userRoutes from "./routes/userRoutes";
-import messageRoutes from "./routes/messageRoutes";
-import articleRoutes from "./routes/articleRoutes";
+import userRoutes from "./routes/user.routes";
+import messageRoutes from "./routes/message.routes";
+import articleRoutes from "./routes/article.routes";
 import { loggerMiddleware } from "./middlewares/loggerMiddleware";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { handleError } from "./utils/errorHandler";
-import aiRoutes from "./routes/aiRoutes";
-import aiHistoryRoutes from "./routes/aiHistoryRoutes";
+import aiRoutes from "./routes/ai.routes";
+import aiHistoryRoutes from "./routes/aiHistory.routes";
+import kanbanRoutes from "./routes/kanban.routes";
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/ai/history", aiHistoryRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/kanban", kanbanRoutes);
 
 // Route de test simple
 app.get("/api/health", (req, res) => {

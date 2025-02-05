@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document, model } from "mongoose";
 import { encryptApiKey } from "../utils/encryption";
 
 export interface IUser extends Document {
@@ -53,4 +53,4 @@ UserSchema.pre("save", async function (this: IUser & Document, next) {
   next();
 });
 
-export default mongoose.model<IUser>("User", UserSchema);
+export const User = model<IUser>("User", UserSchema);

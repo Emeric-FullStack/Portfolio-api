@@ -1,7 +1,7 @@
 import { RequestHandler, Response as ExpressResponse } from "express";
 import { OpenAI } from "openai";
 import axios from "axios";
-import User from "../models/User.model";
+import { User } from "../models/User.model";
 import { decryptApiKey } from "../utils/encryption";
 import { processAttachments } from "../utils/fileProcessor";
 import AiChatHistory from "../models/AiChatHistory.model";

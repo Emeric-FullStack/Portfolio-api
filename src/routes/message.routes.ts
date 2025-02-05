@@ -7,7 +7,7 @@ import {
   getMessages,
   getConversations,
   markAsRead
-} from "../controllers/messageController";
+} from "../controllers/message.controller";
 import { disableCache } from "../middlewares/cacheControl";
 
 const router = express.Router();

@@ -14,7 +14,7 @@ import {
   updateApiKeys,
   deleteApiKey,
   checkApiKeys
-} from "../controllers/userController";
+} from "../controllers/user.controller";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import { trackUserActivity } from "../middlewares/userTracker";
 import { disableCache } from "../middlewares/cacheControl";

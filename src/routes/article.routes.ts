@@ -6,7 +6,7 @@ import {
   deleteArticle,
   getTags,
   likeArticle
-} from "../controllers/articleController";
+} from "../controllers/article.controller";
 import { authenticateUser, isMe } from "../middlewares/authMiddleware";
 import { query } from "express-validator";
 
