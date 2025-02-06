@@ -1,20 +1,19 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from 'mongoose';
 
-export interface IComment extends Document {
-    user: Schema.Types.ObjectId;
-    card: Schema.Types.ObjectId;
+export interface IComment {
+    _id: Types.ObjectId;
     text: string;
+    card: Types.ObjectId;
+    user: Types.ObjectId;
     createdAt: Date;
-    updatedAt: Date;
 }
 
-const CommentSchema = new Schema<IComment>(
-    {
-        user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        card: { type: Schema.Types.ObjectId, ref: "Card", required: true },
-        text: { type: String, required: true },
-    },
-    { timestamps: true }
-);
+const commentSchema = new Schema<IComment>({
+    _id: { type: Schema.Types.ObjectId, required: true },
+    text: { type: String, required: true },
+    card: { type: Schema.Types.ObjectId, ref: 'Card', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now }
+});
 
-export const Comment = model<IComment>("Comment", CommentSchema);
+export const Comment = model<IComment>('Comment', commentSchema);

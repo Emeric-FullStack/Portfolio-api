@@ -303,24 +303,31 @@ export const updateList: RequestHandler = async (req, res): Promise<void> => {
 export const getListsByBoardId: RequestHandler = async (req, res): Promise<void> => {
     try {
         const boardId = req.params.boardId;
-        console.log('Récupération des listes pour le board:', boardId);
-        const lists = await List.find({ board: 
-            boardId })
+        const lists = await List.find({ board: boardId })
             .populate({
                 path: 'cards',
-                populate: {
-                    path: 'checklists',
-                    model: 'Checklist'
-                }
+                populate: [
+                    {
+                        path: 'checklists',
+                        model: 'Checklist'
+                    },
+                    {
+                        path: 'comments',
+                        model: 'Comment',
+                        populate: {
+                            path: 'user',
+                            model: 'User',
+                            select: 'firstName lastName avatar'
+                        }
+                    }
+                ]
             })
             .sort({ position: 1 });
-        console.log('Listes trouvées:', lists);
+
         res.status(200).json(lists);
-        return;
     } catch (error) {
         console.error("Erreur lors de la récupération des listes :", error);
         res.status(500).json({ message: "Erreur interne du serveur" });
-        return;
     }
 };
 
@@ -607,25 +614,45 @@ export const getActivitiesByCardId: RequestHandler = async (req, res): Promise<v
 
 export const createComment: RequestHandler = async (req, res): Promise<void> => {
     try {
-        const { cardId, text } = req.body;
+        const { cardId } = req.params;
+        const { text } = req.body;
         if (!req.user) {
             res.status(401).json({ message: "Utilisateur non authentifié" });
             return;
         }
-        const comment = new Comment({
+
+        const card = await Card.findById(cardId);
+        if (!card) {
+            res.status(404).json({ message: "Carte non trouvée" });
+            return;
+        }
+
+        const newComment = new Comment({
+            _id: new Types.ObjectId(),
+            text,
             card: cardId,
             user: req.user.id,
-            text
+            createdAt: new Date()
         });
-        await comment.save();
-        res.status(201).json(comment);
-        return;
+
+        const savedComment = await newComment.save();
+        
+        // Ajouter le commentaire à la carte
+        card.comments = card.comments || [];
+        card.comments.push(savedComment._id);
+        await card.save();
+
+        // Retourner le commentaire avec les infos de l'utilisateur
+        const populatedComment = await Comment.findById(savedComment._id)
+            .populate('user', 'firstName lastName avatar');
+
+        res.status(201).json(populatedComment);
+
     } catch (error) {
-        console.error("Erreur lors de la création du commentaire :", error);
+        console.error("Erreur lors de la création du commentaire:", error);
         res.status(500).json({ message: "Erreur interne du serveur" });
-        return;
     }
-}
+};
 
 export const deleteComment: RequestHandler = async (req, res): Promise<void> => {
     try {

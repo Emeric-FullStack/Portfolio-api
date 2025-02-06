@@ -83,4 +83,6 @@ router.post("/checklists/:checklistId/items", authenticateUser, createChecklistI
 router.delete("/checklists/:checklistId/items/:itemId", authenticateUser, deleteChecklistItem);
 router.patch("/checklists/:checklistId/items/:itemId/toggle", authenticateUser, toggleChecklistItem);
 
+router.post("/cards/:cardId/comments", authenticateUser, createComment);
+
 export default router;

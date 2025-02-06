@@ -17,7 +17,7 @@ export interface ICard {
   position: number;
   priority?: CardPriority;
   labels?: string[];
-  comments?: IComment[];
+  comments?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
   dueDate?: Date;
