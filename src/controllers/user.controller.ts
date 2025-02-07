@@ -101,11 +101,10 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         return;
       }
 
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        res.status(400).json({ message: 'Invalid credentials' });
-        return;
-      }
+      // Mettre à jour le statut en ligne
+      user.isOnline = true;
+      user.lastConnection = new Date();
+      await user.save();
 
       const token = jwt.sign(
         {
@@ -171,10 +170,6 @@ export const getUserProfile = async (
 };
 
 export const verifyToken: RequestHandler = async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-
   try {
     if (!req.user) {
       res.status(401).json({ message: 'Unauthorized' });
@@ -182,18 +177,29 @@ export const verifyToken: RequestHandler = async (req, res) => {
     }
 
     const user = await User.findById(req.user.id);
-
     if (!user) {
       res.status(404).json({ message: 'User not found' });
       return;
     }
+
+    // Récupérer le statut de l'admin
+    const admin = await User.findOne(
+      { isAdmin: true },
+      'isOnline lastConnection',
+    ).lean();
+
+    // Vérifier si l'admin est actif dans les 5 dernières minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const isAdminOnline =
+      admin?.isOnline &&
+      admin.lastConnection &&
+      admin.lastConnection > fiveMinutesAgo;
 
     // Mise à jour de la dernière connexion
     await User.findByIdAndUpdate(req.user.id, {
       lastConnection: new Date(),
     });
 
-    // Retourne simplement les informations de l'utilisateur
     res.status(200).json({
       user: {
         id: user._id,
@@ -202,6 +208,7 @@ export const verifyToken: RequestHandler = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
       },
+      isAdminOnline,
     });
   } catch (error) {
     res.status(500).json({ error: 'Erreur lors de la vérification du token.' });
@@ -234,43 +241,32 @@ export const getAdminId = async (
   }
 };
 
-export const getUsersStatus = async (
-  req: Request,
-  res: Response,
+export const getUsersStatus: RequestHandler = async (
+  req,
+  res,
 ): Promise<void> => {
   try {
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-
-    if (req.user?.isAdmin) {
-      const users = await User.find(
-        { isAdmin: false },
-        { _id: 1, lastConnection: 1 },
-      );
-
-      const statuses = users.map((user) => ({
-        userId: user._id,
-        online: user.lastConnection && user.lastConnection > tenMinutesAgo,
-      }));
-
-      res.json({ users: statuses });
-      return;
-    }
-
+    // Pour les utilisateurs non-admin, renvoyer uniquement le statut de l'admin
     const admin = await User.findOne(
       { isAdmin: true },
-      { _id: 1, lastConnection: 1 },
-    );
+      'firstName lastName isOnline lastConnection',
+    ).lean();
 
-    if (!admin) {
-      res.status(404).json({ message: 'Admin not found' });
-      return;
-    }
+    // Vérifier si l'admin est actif dans les 5 dernières minutes
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const isActive =
+      admin?.lastConnection && admin.lastConnection > fiveMinutesAgo;
 
     res.json({
-      online: admin.lastConnection && admin.lastConnection > tenMinutesAgo,
+      _id: admin?._id,
+      firstName: admin?.firstName,
+      lastName: admin?.lastName,
+      isOnline: admin?.isOnline && isActive,
+      lastConnection: admin?.lastConnection,
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error checking status' });
+    console.error('Error getting users status:', error);
+    res.status(500).json({ message: 'Error retrieving users status' });
   }
 };
 
@@ -599,5 +595,48 @@ export const checkApiKeys = async (
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur' });
     return;
+  }
+};
+
+// Ajouter une méthode pour la déconnexion
+export const logoutUser: RequestHandler = async (req, res): Promise<void> => {
+  try {
+    if (req.user?._id) {
+      const user = await User.findById(req.user._id);
+
+      // Si c'est l'admin qui se déconnecte
+      if (user?.isAdmin) {
+        await User.findByIdAndUpdate(req.user._id, {
+          isOnline: false,
+          lastConnection: new Date(),
+        });
+      }
+    }
+    res.json({ message: 'Déconnecté avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion:', error);
+    res.status(500).json({ message: 'Erreur lors de la déconnexion' });
+  }
+};
+
+export const updateUserStatus: RequestHandler = async (
+  req,
+  res,
+): Promise<void> => {
+  try {
+    const { isOnline } = req.body;
+
+    if (req.user?._id) {
+      await User.findByIdAndUpdate(req.user._id, {
+        isOnline,
+        lastConnection: new Date(),
+      });
+    }
+    res.json({ message: 'Statut mis à jour avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du statut:', error);
+    res
+      .status(500)
+      .json({ message: 'Erreur lors de la mise à jour du statut' });
   }
 };

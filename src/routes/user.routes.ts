@@ -14,6 +14,8 @@ import {
   updateApiKeys,
   deleteApiKey,
   checkApiKeys,
+  logoutUser,
+  updateUserStatus,
 } from '../controllers/user.controller';
 import { authenticateUser } from '../middlewares/authMiddleware';
 import { trackUserActivity } from '../middlewares/userTracker';
@@ -30,6 +32,7 @@ router.post('/confirm-reset-password', confirmResetPassword);
 
 // Routes authentifiées
 router.use(authenticateUser);
+router.post('/logout', logoutUser);
 
 // Routes de profil
 router.get('/profile', trackUserActivity, getUserProfile);
@@ -39,6 +42,7 @@ router.put('/update-password', updatePassword);
 // Routes de statut
 router.get('/verify-token', verifyToken);
 router.get('/status', getUsersStatus);
+router.put('/status', updateUserStatus);
 
 // Routes API keys
 router.get('/api-keys', disableCache, getApiKeys);
