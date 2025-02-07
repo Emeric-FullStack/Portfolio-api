@@ -50,7 +50,6 @@ export const signupUser = async (
 
     try {
       const emailToken = await emailService.sendConfirmationEmail(email);
-      console.log('Email de confirmation envoyé avec le token:', emailToken);
     } catch (emailError) {
       console.error("Erreur lors de l'envoi de l'email:", emailError);
     }
@@ -65,7 +64,6 @@ export const signupUser = async (
       },
     });
   } catch (error) {
-    console.log(error);
     if (error instanceof z.ZodError) {
       res.status(400).json({
         message: 'Invalid input data',

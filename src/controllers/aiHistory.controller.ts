@@ -71,7 +71,6 @@ export const getConversations = async (
 ): Promise<void> => {
   try {
     const userId = req.user?._id;
-    console.log('userId', userId);
     const conversations = await AiChatHistory.find({ userId });
     res.status(200).json(conversations);
   } catch (error) {

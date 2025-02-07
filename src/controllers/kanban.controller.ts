@@ -64,9 +64,6 @@ export const getUserBoards: RequestHandler = async (
 
 export const getBoardById: RequestHandler = async (req, res): Promise<void> => {
   try {
-    console.log('getBoardById', req.params.id);
-    console.log('User:', req.user);
-
     const boardId = req.params.id;
     if (!req.user) {
       res.status(401).json({ message: 'Utilisateur non authentifié' });
@@ -79,10 +76,6 @@ export const getBoardById: RequestHandler = async (req, res): Promise<void> => {
       res.status(404).json({ message: 'Tableau non trouvé' });
       return;
     }
-
-    console.log('Board members:', board.members);
-    console.log('User ID:', userId);
-    console.log('Is member:', board.members.includes(userId));
 
     const isMember = board.members.some((memberId) =>
       (memberId as unknown as Types.ObjectId).equals(userId),
@@ -260,7 +253,6 @@ export const createList: RequestHandler = async (req, res): Promise<void> => {
 export const deleteList: RequestHandler = async (req, res): Promise<void> => {
   try {
     const listId = req.params.listId;
-    console.log('listId', listId);
     const list = await List.findById(listId);
     if (!list) {
       res.status(404).json({ message: 'Liste non trouvée' });
@@ -340,7 +332,6 @@ export const updateListPosition: RequestHandler = async (
   try {
     const { boardId, listId } = req.params;
     const { position: newPosition } = req.body;
-    console.log('updateListPosition', boardId, listId, newPosition);
     let lists = await List.find({ board: boardId }).sort('position');
 
     const draggedList = lists.find((list) => list._id.toString() === listId);
@@ -388,10 +379,6 @@ export const updateListPositions: RequestHandler = async (
   try {
     const { boardId } = req.params;
     const { lists } = req.body;
-
-    console.log('updateListPositions - boardId:', boardId);
-    console.log('updateListPositions - lists:', lists);
-
     const updates = lists.map((list: { _id: string; position: number }) =>
       List.findByIdAndUpdate(
         list._id,
@@ -425,7 +412,6 @@ export const updateListPositions: RequestHandler = async (
 export const createCard: RequestHandler = async (req, res): Promise<void> => {
   try {
     const { title, listId, boardId, description } = req.body;
-    console.log('Création de carte:', { title, listId, boardId });
 
     if (!title || !listId || !boardId) {
       res
@@ -443,7 +429,6 @@ export const createCard: RequestHandler = async (req, res): Promise<void> => {
     });
 
     const savedCard = await newCard.save();
-    console.log('Carte créée:', savedCard);
 
     // Ajouter la carte à la liste
     const list = await List.findById(listId);
@@ -484,7 +469,6 @@ export const updateCard: RequestHandler = async (req, res): Promise<void> => {
     const cardId = req.params.cardId;
     const { title, listId, boardId, position, description, priority } =
       req.body;
-    console.log('Mise à jour de la carte:', { cardId, title, description });
 
     const card = await Card.findById(cardId);
     if (!card) {
@@ -501,7 +485,6 @@ export const updateCard: RequestHandler = async (req, res): Promise<void> => {
     card.priority = priority;
 
     const updatedCard = await card.save();
-    console.log('Carte mise à jour:', updatedCard);
 
     res.status(200).json(updatedCard);
   } catch (error) {
@@ -896,7 +879,6 @@ export const createChecklistItem: RequestHandler = async (
     checklist.items.push(newItem);
     const updatedChecklist = await checklist.save();
 
-    console.log('Item ajouté à la checklist:', updatedChecklist);
     res.status(201).json(updatedChecklist);
     return;
   } catch (error) {
