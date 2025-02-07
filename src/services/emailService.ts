@@ -1,9 +1,10 @@
 import nodemailer from 'nodemailer';
 import Email from '../models/Email.model';
 import crypto from 'crypto';
+import { User } from '../models/User.model';
 
 export class EmailService {
-  private readonly transporter: nodemailer.Transporter;
+  public readonly transporter: nodemailer.Transporter;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
@@ -55,41 +56,28 @@ export class EmailService {
     return token;
   }
 
-  async sendPasswordResetEmail(userEmail: string): Promise<string> {
-    const token = this.generateToken();
-    const resetLink = `http://localhost:4200/reset-password/confirm?token=${token}`;
-    const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 heure
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    const token = crypto.randomBytes(32).toString('hex');
+    const user = await User.findOne({ email });
+    if (!user) throw new Error('Utilisateur non trouvé');
 
-    const html = `
-      <h1>Réinitialisation de votre mot de passe</h1>
-      <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
-      <a href="${resetLink}" target="_blank">
-        Réinitialiser mon mot de passe
-      </a>
-      <p>Ce lien expire dans 1 heure.</p>
-    `;
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = new Date(Date.now() + 3600000);
+    await user.save();
 
-    const emailData = {
-      to: userEmail,
-      from: process.env.SMTP_FROM ?? 'noreply@votreapp.com',
-      subject: 'Réinitialisation de votre mot de passe',
-      html,
-      type: 'reset_password' as const,
-      token,
-      expiresAt,
-    };
-
-    const email = new Email(emailData);
-    await email.save();
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/confirm?token=${token}`;
 
     await this.transporter.sendMail({
-      to: userEmail,
-      from: emailData.from,
-      subject: emailData.subject,
-      html,
+      to: email,
+      from: process.env.SMTP_FROM ?? 'noreply@votreapp.com',
+      subject: 'Réinitialisation de votre mot de passe',
+      html: `
+        <h1>Réinitialisation de votre mot de passe</h1>
+        <p>Cliquez sur le lien suivant pour réinitialiser votre mot de passe :</p>
+        <a href="${resetLink}">Réinitialiser mon mot de passe</a>
+        <p>Ce lien expirera dans 1 heure.</p>
+      `,
     });
-
-    return token;
   }
 
   async verifyToken(

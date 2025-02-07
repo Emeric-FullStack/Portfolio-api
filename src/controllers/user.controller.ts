@@ -65,6 +65,7 @@ export const signupUser = async (
       },
     });
   } catch (error) {
+    console.log(error);
     if (error instanceof z.ZodError) {
       res.status(400).json({
         message: 'Invalid input data',
@@ -449,54 +450,33 @@ export const confirmResetPassword: RequestHandler = async (
   try {
     const { token, newPassword } = req.body;
 
-    // Vérifier le token
-    const emailRecord = await Email.findOne({
-      token,
-      type: 'reset_password',
-      isUsed: false,
-      expiresAt: { $gt: new Date() },
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
-    if (!emailRecord) {
-      res.status(400).json({
-        success: false,
-        message: 'Token invalide ou expiré',
-      });
+    if (!user) {
+      res.status(400).json({ message: 'Token invalide ou expiré' });
       return;
     }
 
-    // Hasher le nouveau mot de passe
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // Mettre à jour le mot de passe de l'utilisateur
-    const updatedUser = await User.findOneAndUpdate(
-      { email: emailRecord.to },
-      { password: hashedPassword },
-      { new: true },
-    );
+    user.password = hashedPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
 
-    if (!updatedUser) {
-      res.status(404).json({
-        success: false,
-        message: 'Utilisateur non trouvé',
-      });
-      return;
-    }
+    await user.save();
 
-    // Marquer le token comme utilisé
-    emailRecord.isUsed = true;
-    await emailRecord.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Mot de passe réinitialisé avec succès',
-    });
+    res.json({ message: 'Mot de passe modifié avec succès' });
+    return;
   } catch (error) {
-    console.error('Confirm reset password error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la réinitialisation du mot de passe',
-    });
+    console.error('Erreur lors de la réinitialisation du mot de passe:', error);
+    res
+      .status(500)
+      .json({ message: 'Erreur lors de la réinitialisation du mot de passe' });
+    return;
   }
 };
 

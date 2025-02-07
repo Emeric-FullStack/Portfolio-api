@@ -25,7 +25,6 @@ const transporter = nodemailer.createTransport(
 export const sendContactEmail: RequestHandler = async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
-    console.log(req.body);
     const mailOptions = {
       from: isDev ? 'test@localhost' : process.env.EMAIL_USER,
       to: isDev ? 'test@localhost' : process.env.EMAIL_RECIPIENT,

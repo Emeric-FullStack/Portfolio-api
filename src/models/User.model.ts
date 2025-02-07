@@ -18,13 +18,15 @@ export interface IUser extends Document {
     openai: string;
     deepseek: string;
   };
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
 }
 
 const UserSchema: Schema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true, minlength: 8 },
   company: { type: String },
   createdAt: { type: Date },
   isOnline: { type: Boolean, default: false },
@@ -41,6 +43,8 @@ const UserSchema: Schema = new Schema({
     openai: { type: String, select: true },
     deepseek: { type: String, select: true },
   },
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
 });
 
 UserSchema.pre('save', async function (this: IUser & Document, next) {

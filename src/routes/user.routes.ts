@@ -26,7 +26,7 @@ router.post('/signup', signupUser);
 router.post('/login', loginUser);
 router.post('/confirm-email', confirmEmail);
 router.post('/reset-password', resetPassword);
-router.post('/reset-password/confirm', confirmResetPassword);
+router.post('/confirm-reset-password', confirmResetPassword);
 
 // Routes authentifiées
 router.use(authenticateUser);
