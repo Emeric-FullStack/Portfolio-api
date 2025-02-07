@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, Document } from "mongoose";
+import mongoose, { Schema, model, Document } from 'mongoose';
 
 export interface IArticle extends Document {
   _id: mongoose.Types.ObjectId;
@@ -18,13 +18,13 @@ export const ArticleSchema = new Schema<IArticle>({
   title: { type: String, required: true },
   summary: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
-  author: { type: String, default: "Tourel Emeric avec IA" },
+  author: { type: String, default: 'Tourel Emeric avec IA' },
   image: { type: String, required: false },
   source: { type: String, required: true },
   content: { type: String, required: true },
   tags: { type: [String], required: false },
   readingTime: { type: String, required: false },
-  external_link: { type: String, required: false }
+  external_link: { type: String, required: false },
 });
 
-export default model<IArticle>("Article", ArticleSchema);
+export default model<IArticle>('Article', ArticleSchema);

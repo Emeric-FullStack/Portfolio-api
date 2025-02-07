@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import { model, Schema } from 'mongoose';
 
 export interface IChecklistItem {
   _id?: string;
@@ -21,23 +21,29 @@ export interface IChecklist {
   isCompleted: boolean;
 }
 
-const ChecklistItemSchema = new Schema<IChecklistItem>({
-  text: { type: String, required: true },
-  isCompleted: { type: Boolean, default: false },
-  position: { type: Number, required: true }
-}, { _id: true });
+const ChecklistItemSchema = new Schema<IChecklistItem>(
+  {
+    text: { type: String, required: true },
+    isCompleted: { type: Boolean, default: false },
+    position: { type: Number, required: true },
+  },
+  { _id: true },
+);
 
-const ChecklistSchema = new Schema<IChecklist>({
-  title: { type: String, required: true },
-  items: [ChecklistItemSchema],
-  cardId: { type: String, required: true },
-  position: { type: Number, required: true },
-  card: { type: String, required: true },
-  board: { type: String, required: true },
-  list: { type: String, required: true },
-  isCompleted: { type: Boolean, default: false }
-}, {
-  timestamps: true
-});
+const ChecklistSchema = new Schema<IChecklist>(
+  {
+    title: { type: String, required: true },
+    items: [ChecklistItemSchema],
+    cardId: { type: String, required: true },
+    position: { type: Number, required: true },
+    card: { type: String, required: true },
+    board: { type: String, required: true },
+    list: { type: String, required: true },
+    isCompleted: { type: Boolean, default: false },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-export const Checklist = model<IChecklist>("Checklist", ChecklistSchema); 
+export const Checklist = model<IChecklist>('Checklist', ChecklistSchema);

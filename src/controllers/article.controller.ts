@@ -1,35 +1,35 @@
-import { Request, Response } from "express";
-import Article from "../models/Article.model";
-import { User } from "../models/User.model";
-import cloudinary from "../config/cloudinaryConfig";
-const mongoose = require("mongoose");
-import multer from "multer";
+import { Request, Response } from 'express';
+import Article from '../models/Article.model';
+import { User } from '../models/User.model';
+import cloudinary from '../config/cloudinaryConfig';
+const mongoose = require('mongoose');
+import multer from 'multer';
 
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024,
-    files: 1
+    files: 1,
   },
   fileFilter: (req, file, cb) => {
     const imageTypeRegex = /^image\/(jpeg|png|gif)$/;
     if (!imageTypeRegex.exec(file.mimetype)) {
-      cb(new Error("Only image files are allowed!"));
+      cb(new Error('Only image files are allowed!'));
       return;
     }
     cb(null, true);
-  }
+  },
 });
 
 export const getArticles = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
-    const tags = req.query.tags ? (req.query.tags as string).split(",") : [];
+    const tags = req.query.tags ? (req.query.tags as string).split(',') : [];
     const userId = req.user?.id;
 
     const query = tags.length > 0 ? { tags: { $in: tags } } : {};
@@ -40,28 +40,28 @@ export const getArticles = async (
 
     const [articles, totalArticles] = await Promise.all([
       Article.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Article.countDocuments(query)
+      Article.countDocuments(query),
     ]);
 
     const articlesWithLikes = articles.map((article) => ({
       ...article.toObject(),
-      isLiked: userLikedArticles.includes(article._id)
+      isLiked: userLikedArticles.includes(article._id),
     }));
 
     res.status(200).json({
       articles: articlesWithLikes,
       currentPage: page,
       totalArticles,
-      totalPages: Math.ceil(totalArticles / limit)
+      totalPages: Math.ceil(totalArticles / limit),
     });
   } catch (error) {
-    console.error("Erreur lors de la récupération des articles :", error);
-    res.status(500).json({ message: "Server error" });
+    console.error('Erreur lors de la récupération des articles :', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
 export const createArticle = [
-  upload.single("image"),
+  upload.single('image'),
   async (req: Request, res: Response) => {
     try {
       const {
@@ -71,17 +71,17 @@ export const createArticle = [
         content,
         tags,
         readingTime,
-        external_link
+        external_link,
       } = req.body;
       let uploadedImageUrl = null;
 
       if (req.file) {
-        const base64Image = req.file.buffer.toString("base64");
+        const base64Image = req.file.buffer.toString('base64');
         const dataUri = `data:${req.file.mimetype};base64,${base64Image}`;
 
         const uploadResponse = await cloudinary.uploader.upload(dataUri, {
-          folder: "articles",
-          resource_type: "image"
+          folder: 'articles',
+          resource_type: 'image',
         });
         uploadedImageUrl = uploadResponse.secure_url;
       }
@@ -94,7 +94,7 @@ export const createArticle = [
         content,
         tags,
         readingTime,
-        external_link
+        external_link,
       });
 
       const savedArticle = await newArticle.save();
@@ -102,21 +102,21 @@ export const createArticle = [
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
-  }
+  },
 ];
 
 export const updateArticle = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
     const updatedArticle = await Article.findByIdAndUpdate(id, req.body, {
-      new: true
+      new: true,
     });
 
     if (!updatedArticle) {
-      res.status(404).json({ message: "Article non trouvé." });
+      res.status(404).json({ message: 'Article non trouvé.' });
       return;
     }
 
@@ -128,14 +128,14 @@ export const updateArticle = async (
 
 export const deleteArticle = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { id } = req.params;
     const deletedArticle = await Article.findByIdAndDelete(id);
 
     if (!deletedArticle) {
-      res.status(404).json({ message: "Article non trouvé." });
+      res.status(404).json({ message: 'Article non trouvé.' });
       return;
     }
 
@@ -147,7 +147,7 @@ export const deleteArticle = async (
 
 export const getTags = async (req: Request, res: Response) => {
   try {
-    const tags = await Article.distinct("tags");
+    const tags = await Article.distinct('tags');
     res.json(tags);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -156,24 +156,24 @@ export const getTags = async (req: Request, res: Response) => {
 
 export const likeArticle = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
     const articleId = new mongoose.Types.ObjectId(req.params.id);
     if (!articleId) {
-      res.status(400).json({ message: "Article ID is required" });
+      res.status(400).json({ message: 'Article ID is required' });
       return;
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: 'User not found' });
       return;
     }
 
@@ -183,21 +183,21 @@ export const likeArticle = async (
       await User.findByIdAndUpdate(
         userId,
         { $pull: { articles_liked: articleId } },
-        { new: true }
+        { new: true },
       );
     } else {
       await User.findByIdAndUpdate(
         userId,
         { $addToSet: { articles_liked: articleId } },
-        { new: true }
+        { new: true },
       );
     }
 
     await user.save();
 
     res.status(200).json({
-      message: `Article has been ${isLiked ? "unliked" : "liked"}`,
-      isLiked: !isLiked
+      message: `Article has been ${isLiked ? 'unliked' : 'liked'}`,
+      isLiked: !isLiked,
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

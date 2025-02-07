@@ -1,11 +1,9 @@
-import { model, Schema, Types } from "mongoose";
-import { IComment } from "./Comment.model";
-import { IChecklist } from "./Checklist.model";
+import { model, Schema, Types } from 'mongoose';
 
 export enum CardPriority {
   LOW = 'low',
   MEDIUM = 'medium',
-  HIGH = 'high'
+  HIGH = 'high',
 }
 
 export interface ICard {
@@ -25,24 +23,27 @@ export interface ICard {
   checklists?: Types.ObjectId[];
 }
 
-const CardSchema = new Schema<ICard>({
-  title: { type: String, required: true },
-  description: { type: String, default: '' },
-  listId: { type: String, required: true },
-  boardId: { type: String, required: true },
-  position: { type: Number, required: true },
-  priority: { 
-    type: String, 
-    enum: Object.values(CardPriority),
-    default: CardPriority.MEDIUM 
+const CardSchema = new Schema<ICard>(
+  {
+    title: { type: String, required: true },
+    description: { type: String, default: '' },
+    listId: { type: String, required: true },
+    boardId: { type: String, required: true },
+    position: { type: Number, required: true },
+    priority: {
+      type: String,
+      enum: Object.values(CardPriority),
+      default: CardPriority.MEDIUM,
+    },
+    labels: [{ type: Schema.Types.ObjectId, ref: 'Label' }],
+    comments: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
+    dueDate: { type: Date },
+    assignedTo: { type: String },
+    checklists: [{ type: Schema.Types.ObjectId, ref: 'Checklist' }],
   },
-  labels: [{ type: Schema.Types.ObjectId, ref: 'Label' }],
-  comments: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
-  dueDate: { type: Date },
-  assignedTo: { type: String },
-  checklists: [{ type: Schema.Types.ObjectId, ref: 'Checklist' }]
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  },
+);
 
-export const Card = model<ICard>("Card", CardSchema);
+export const Card = model<ICard>('Card', CardSchema);

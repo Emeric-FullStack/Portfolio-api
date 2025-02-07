@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document, model } from "mongoose";
-import { encryptApiKey } from "../utils/encryption";
+import mongoose, { Schema, Document, model } from 'mongoose';
+import { encryptApiKey } from '../utils/encryption';
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -33,24 +33,24 @@ const UserSchema: Schema = new Schema({
   articles_liked: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Article"
-    }
+      ref: 'Article',
+    },
   ],
   isVerified: { type: Boolean, default: false },
   apiKeys: {
     openai: { type: String, select: true },
-    deepseek: { type: String, select: true }
-  }
+    deepseek: { type: String, select: true },
+  },
 });
 
-UserSchema.pre("save", async function (this: IUser & Document, next) {
-  if (this.isModified("apiKeys.openai")) {
+UserSchema.pre('save', async function (this: IUser & Document, next) {
+  if (this.isModified('apiKeys.openai')) {
     this.apiKeys.openai = encryptApiKey(this.apiKeys.openai);
   }
-  if (this.isModified("apiKeys.deepseek")) {
+  if (this.isModified('apiKeys.deepseek')) {
     this.apiKeys.deepseek = encryptApiKey(this.apiKeys.deepseek);
   }
   next();
 });
 
-export const User = model<IUser>("User", UserSchema);
+export const User = model<IUser>('User', UserSchema);

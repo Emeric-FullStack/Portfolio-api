@@ -1,10 +1,10 @@
-import { promises as fs } from "fs";
-import path from "path";
-import pdf from "pdf-parse";
-import mammoth from "mammoth";
+import { promises as fs } from 'fs';
+import path from 'path';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
 
 export async function processAttachments(
-  files: Express.Multer.File[]
+  files: Express.Multer.File[],
 ): Promise<string> {
   const textContents: string[] = [];
 
@@ -13,21 +13,21 @@ export async function processAttachments(
 
     try {
       switch (ext) {
-        case ".txt": {
-          const text = await fs.readFile(file.path, "utf-8");
+        case '.txt': {
+          const text = await fs.readFile(file.path, 'utf-8');
           textContents.push(text);
           break;
         }
 
-        case ".pdf": {
+        case '.pdf': {
           const pdfBuffer = await fs.readFile(file.path);
           const pdfData = await pdf(pdfBuffer);
           textContents.push(pdfData.text);
           break;
         }
 
-        case ".doc":
-        case ".docx": {
+        case '.doc':
+        case '.docx': {
           const docBuffer = await fs.readFile(file.path);
           const result = await mammoth.extractRawText({ buffer: docBuffer });
           textContents.push(result.value);
@@ -37,10 +37,10 @@ export async function processAttachments(
     } catch (error) {
       console.error(
         `Erreur lors du traitement du fichier ${file.originalname}:`,
-        error
+        error,
       );
     }
   }
 
-  return textContents.join("\n\n");
+  return textContents.join('\n\n');
 }

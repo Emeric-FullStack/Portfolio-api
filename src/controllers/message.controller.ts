@@ -1,8 +1,8 @@
 // controllers/messageController.ts
-import { Request, Response } from "express";
-import Message, { IMessagePopulated } from "../models/Message.model";
-import { User } from "../models/User.model";
-import mongoose, { Types } from "mongoose";
+import { Request, Response } from 'express';
+import Message, { IMessagePopulated } from '../models/Message.model';
+import { User } from '../models/User.model';
+import mongoose, { Types } from 'mongoose';
 
 interface ConversationAggregation {
   _id: Types.ObjectId;
@@ -16,20 +16,20 @@ interface ConversationAggregation {
 
 export const sendMessage = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { content, receiverId } = req.body;
     const senderId = req.user?.id;
 
     if (!senderId) {
-      res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: 'Unauthorized' });
       return;
     }
 
     const sender = await User.findById(senderId);
     if (!sender) {
-      res.status(404).json({ message: "Sender not found" });
+      res.status(404).json({ message: 'Sender not found' });
       return;
     }
 
@@ -39,7 +39,7 @@ export const sendMessage = async (
     if (!sender.isAdmin) {
       const admin = await User.findOne({ isAdmin: true });
       if (!admin) {
-        res.status(404).json({ message: "Admin not found" });
+        res.status(404).json({ message: 'Admin not found' });
         return;
       }
       finalReceiverId = admin._id;
@@ -49,44 +49,44 @@ export const sendMessage = async (
       content,
       sender: senderId,
       receiver: finalReceiverId,
-      read: false
+      read: false,
     });
 
     await newMessage.save();
 
     const populatedMessage = await Message.findById(newMessage._id)
-      .populate("sender", "firstName lastName")
-      .populate("receiver", "firstName lastName");
+      .populate('sender', 'firstName lastName')
+      .populate('receiver', 'firstName lastName');
 
     res.status(201).json(populatedMessage);
   } catch (error) {
-    console.error("Error sending message:", error);
-    res.status(500).json({ message: "Error sending message" });
+    console.error('Error sending message:', error);
+    res.status(500).json({ message: 'Error sending message' });
   }
 };
 
 export const getMessagesWithAdmin = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = new mongoose.Types.ObjectId(`${req.user?.id}`);
-    const adminUser = await User.findOne({ email: "tourel.emeric@gmail.com" });
+    const adminUser = await User.findOne({ email: 'tourel.emeric@gmail.com' });
 
     if (!adminUser) {
-      res.status(404).json({ message: "Admin not found" });
+      res.status(404).json({ message: 'Admin not found' });
       return;
     }
 
     const messages = await Message.find({
       $or: [
         { sender: userId, receiver: adminUser._id },
-        { sender: adminUser._id, receiver: userId }
-      ]
+        { sender: adminUser._id, receiver: userId },
+      ],
     })
       .sort({ createdAt: 1 })
-      .populate("sender", "firstName lastName email")
-      .populate("receiver", "firstName lastName email")
+      .populate('sender', 'firstName lastName email')
+      .populate('receiver', 'firstName lastName email')
       .lean<IMessagePopulated[]>();
 
     const formattedMessages = messages.map((msg: any) => ({
@@ -96,28 +96,28 @@ export const getMessagesWithAdmin = async (
         _id: msg.sender._id.toString(),
         firstName: msg.sender.firstName,
         lastName: msg.sender.lastName,
-        email: msg.sender.email
+        email: msg.sender.email,
       },
       receiver: {
         _id: msg.receiver._id.toString(),
         firstName: msg.receiver.firstName,
         lastName: msg.receiver.lastName,
-        email: msg.receiver.email
+        email: msg.receiver.email,
       },
       createdAt: msg.createdAt,
-      read: msg.read
+      read: msg.read,
     }));
 
     res.status(200).json(formattedMessages);
   } catch (error) {
-    console.error("Error retrieving messages:", error);
-    res.status(500).json({ message: "Error retrieving messages" });
+    console.error('Error retrieving messages:', error);
+    res.status(500).json({ message: 'Error retrieving messages' });
   }
 };
 
 export const getMessages = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const userId = req.user?.id;
@@ -127,17 +127,17 @@ export const getMessages = async (
       $or: [
         {
           sender: new mongoose.Types.ObjectId(`${userId}`),
-          receiver: new mongoose.Types.ObjectId(`${withUserId}`)
+          receiver: new mongoose.Types.ObjectId(`${withUserId}`),
         },
         {
           sender: new mongoose.Types.ObjectId(`${withUserId}`),
-          receiver: new mongoose.Types.ObjectId(`${userId}`)
-        }
-      ]
+          receiver: new mongoose.Types.ObjectId(`${userId}`),
+        },
+      ],
     })
       .sort({ createdAt: 1 })
-      .populate("sender", "firstName lastName email")
-      .populate("receiver", "firstName lastName email")
+      .populate('sender', 'firstName lastName email')
+      .populate('receiver', 'firstName lastName email')
       .lean<IMessagePopulated[]>();
 
     const formattedMessages = messages.map((msg: any) => ({
@@ -147,26 +147,29 @@ export const getMessages = async (
         _id: msg.sender._id.toString(),
         firstName: msg.sender.firstName,
         lastName: msg.sender.lastName,
-        email: msg.sender.email
+        email: msg.sender.email,
       },
       receiver: {
         _id: msg.receiver._id.toString(),
         firstName: msg.receiver.firstName,
         lastName: msg.receiver.lastName,
-        email: msg.receiver.email
+        email: msg.receiver.email,
       },
       createdAt: msg.createdAt,
-      read: msg.read
+      read: msg.read,
     }));
 
     res.status(200).json(formattedMessages);
   } catch (error) {
-    console.error("Error retrieving messages:", error);
-    res.status(500).json({ message: "Error retrieving messages" });
+    console.error('Error retrieving messages:', error);
+    res.status(500).json({ message: 'Error retrieving messages' });
   }
 };
 
-export const getConversations = async (req: Request, res: Response): Promise<void> => {
+export const getConversations = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     const userId = req.user?.id;
 
@@ -176,13 +179,13 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
         $match: {
           $or: [
             { sender: new mongoose.Types.ObjectId(`${userId}`) },
-            { receiver: new mongoose.Types.ObjectId(`${userId}`) }
-          ]
-        }
+            { receiver: new mongoose.Types.ObjectId(`${userId}`) },
+          ],
+        },
       },
       // Trier par date décroissante
       {
-        $sort: { createdAt: -1 }
+        $sort: { createdAt: -1 },
       },
       // Grouper par conversation
       {
@@ -190,13 +193,13 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
           _id: {
             $cond: {
               if: {
-                $eq: ["$sender", new mongoose.Types.ObjectId(`${userId}`)]
+                $eq: ['$sender', new mongoose.Types.ObjectId(`${userId}`)],
               },
-              then: "$receiver",
-              else: "$sender"
-            }
+              then: '$receiver',
+              else: '$sender',
+            },
           },
-          lastMessage: { $first: "$$ROOT" },
+          lastMessage: { $first: '$$ROOT' },
           unreadCount: {
             $sum: {
               $cond: [
@@ -204,60 +207,60 @@ export const getConversations = async (req: Request, res: Response): Promise<voi
                   $and: [
                     {
                       $eq: [
-                        "$receiver",
-                        new mongoose.Types.ObjectId(`${userId}`)
-                      ]
+                        '$receiver',
+                        new mongoose.Types.ObjectId(`${userId}`),
+                      ],
                     },
-                    { $eq: ["$read", false] }
-                  ]
+                    { $eq: ['$read', false] },
+                  ],
                 },
                 1,
-                0
-              ]
-            }
-          }
-        }
+                0,
+              ],
+            },
+          },
+        },
       },
       // Joindre les infos utilisateur
       {
         $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "userDetails"
-        }
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'userDetails',
+        },
       },
       {
-        $unwind: "$userDetails"
+        $unwind: '$userDetails',
       },
       // Projeter le résultat final
       {
         $project: {
-          _id: "$userDetails._id",
-          firstName: "$userDetails.firstName",
-          lastName: "$userDetails.lastName",
-          email: "$userDetails.email",
-          lastMessage: "$lastMessage.content",
+          _id: '$userDetails._id',
+          firstName: '$userDetails.firstName',
+          lastName: '$userDetails.lastName',
+          email: '$userDetails.email',
+          lastMessage: '$lastMessage.content',
           unreadCount: 1,
-          timestamp: "$lastMessage.createdAt"
-        }
+          timestamp: '$lastMessage.createdAt',
+        },
       },
       // Trier par dernier message
       {
-        $sort: { timestamp: -1 }
-      }
+        $sort: { timestamp: -1 },
+      },
     ]);
 
     res.status(200).json(conversations);
   } catch (error) {
-    console.error("Error getting conversations:", error);
-    res.status(500).json({ message: "Error retrieving conversations" });
+    console.error('Error getting conversations:', error);
+    res.status(500).json({ message: 'Error retrieving conversations' });
   }
 };
 
 export const markAsRead = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { conversationId } = req.params;
@@ -267,13 +270,13 @@ export const markAsRead = async (
       {
         sender: conversationId,
         receiver: userId,
-        read: false
+        read: false,
       },
-      { read: true }
+      { read: true },
     );
 
-    res.status(200).json({ message: "Messages marked as read" });
+    res.status(200).json({ message: 'Messages marked as read' });
   } catch (error) {
-    res.status(500).json({ message: "Error marking messages as read" });
+    res.status(500).json({ message: 'Error marking messages as read' });
   }
 };

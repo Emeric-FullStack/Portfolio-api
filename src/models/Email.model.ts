@@ -1,11 +1,11 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IEmail extends Document {
   to: string;
   from: string;
   subject: string;
   html: string;
-  type: "confirmation" | "reset_password";
+  type: 'confirmation' | 'reset_password';
   token: string;
   createdAt: Date;
   expiresAt: Date;
@@ -20,12 +20,12 @@ const EmailSchema: Schema = new Schema({
   type: {
     type: String,
     required: true,
-    enum: ["confirmation", "reset_password"]
+    enum: ['confirmation', 'reset_password'],
   },
   token: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date, required: true },
-  isUsed: { type: Boolean, default: false }
+  isUsed: { type: Boolean, default: false },
 });
 
-export default mongoose.model<IEmail>("Email", EmailSchema);
+export default mongoose.model<IEmail>('Email', EmailSchema);

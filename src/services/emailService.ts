@@ -1,21 +1,21 @@
-import nodemailer from "nodemailer";
-import Email from "../models/Email.model";
-import crypto from "crypto";
+import nodemailer from 'nodemailer';
+import Email from '../models/Email.model';
+import crypto from 'crypto';
 
 export class EmailService {
   private readonly transporter: nodemailer.Transporter;
 
   constructor() {
     this.transporter = nodemailer.createTransport({
-      host: "localhost",
+      host: 'localhost',
       port: 1025,
       secure: false,
-      ignoreTLS: true
+      ignoreTLS: true,
     });
   }
 
   private generateToken(): string {
-    return crypto.randomBytes(32).toString("hex");
+    return crypto.randomBytes(32).toString('hex');
   }
 
   async sendConfirmationEmail(userEmail: string): Promise<string> {
@@ -34,12 +34,12 @@ export class EmailService {
 
     const emailData = {
       to: userEmail,
-      from: process.env.SMTP_FROM ?? "noreply@votreapp.com",
-      subject: "Confirmation de votre compte",
+      from: process.env.SMTP_FROM ?? 'noreply@votreapp.com',
+      subject: 'Confirmation de votre compte',
       html,
-      type: "confirmation" as const,
+      type: 'confirmation' as const,
       token,
-      expiresAt
+      expiresAt,
     };
 
     const email = new Email(emailData);
@@ -49,7 +49,7 @@ export class EmailService {
       to: userEmail,
       from: emailData.from,
       subject: emailData.subject,
-      html
+      html,
     });
 
     return token;
@@ -71,12 +71,12 @@ export class EmailService {
 
     const emailData = {
       to: userEmail,
-      from: process.env.SMTP_FROM ?? "noreply@votreapp.com",
-      subject: "Réinitialisation de votre mot de passe",
+      from: process.env.SMTP_FROM ?? 'noreply@votreapp.com',
+      subject: 'Réinitialisation de votre mot de passe',
       html,
-      type: "reset_password" as const,
+      type: 'reset_password' as const,
       token,
-      expiresAt
+      expiresAt,
     };
 
     const email = new Email(emailData);
@@ -86,7 +86,7 @@ export class EmailService {
       to: userEmail,
       from: emailData.from,
       subject: emailData.subject,
-      html
+      html,
     });
 
     return token;
@@ -94,13 +94,13 @@ export class EmailService {
 
   async verifyToken(
     token: string,
-    type: "confirmation" | "reset_password"
+    type: 'confirmation' | 'reset_password',
   ): Promise<boolean> {
     const email = await Email.findOne({
       token,
       type,
       isUsed: false,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
 
     if (email) {

@@ -1,12 +1,12 @@
-import "dotenv/config";
-import app from "./app";
-import mongoose from "mongoose";
-import http from "http";
-import { Server } from "socket.io";
-import jwt from "jsonwebtoken";
-import { IMessagePopulated } from "./models/Message.model";
-import messageRoutes from "./routes/message.routes";
-import rateLimit from "express-rate-limit";
+import 'dotenv/config';
+import app from './app';
+import mongoose from 'mongoose';
+import http from 'http';
+import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import { IMessagePopulated } from './models/Message.model';
+import messageRoutes from './routes/message.routes';
+import rateLimit from 'express-rate-limit';
 
 interface MessageDocument extends Document {
   _id: mongoose.Types.ObjectId;
@@ -18,12 +18,12 @@ interface MessageDocument extends Document {
 }
 
 interface ServerToClientEvents {
-  "receive-message": (message: IMessagePopulated) => void;
+  'receive-message': (message: IMessagePopulated) => void;
   user_status: (data: { userId: string; online: boolean }) => void;
 }
 
 interface ClientToServerEvents {
-  "send-message": (message: IMessagePopulated) => void;
+  'send-message': (message: IMessagePopulated) => void;
 }
 
 interface InterServerEvents {
@@ -42,10 +42,10 @@ interface SocketData {
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limite chaque IP à 100 requêtes par fenêtre
+  max: 100, // limite chaque IP à 100 requêtes par fenêtre
 });
 
-app.use("/api/", limiter);
+app.use('/api/', limiter);
 
 if (
   process.env.PORT &&
@@ -66,38 +66,38 @@ if (
     SocketData
   >(httpServer, {
     cors: {
-      origin: ["http://localhost:4200", "http://localhost:5173"],
-      methods: ["GET", "POST"],
+      origin: ['http://localhost:4200', 'http://localhost:5173'],
+      methods: ['GET', 'POST'],
       credentials: true,
-      allowedHeaders: ["Authorization"]
+      allowedHeaders: ['Authorization'],
     },
-    path: "/socket.io/",
-    transports: ["websocket", "polling"]
+    path: '/socket.io/',
+    transports: ['websocket', 'polling'],
   });
 
-  io.engine.on("connection_error", (err) => {
-    console.log("Connection error:", err);
+  io.engine.on('connection_error', (err) => {
+    console.log('Connection error:', err);
   });
 
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (!token) {
-      return next(new Error("Authentication error"));
+      return next(new Error('Authentication error'));
     }
 
     jwt.verify(
       token,
       process.env.JWT_SECRET as string,
       (err: any, decoded: any) => {
-        if (err) return next(new Error("Authentication error"));
+        if (err) return next(new Error('Authentication error'));
         socket.data.user = decoded;
         next();
-      }
+      },
     );
   });
 
-  io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+  io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
     const token = socket.handshake.auth.token;
 
     jwt.verify(
@@ -105,46 +105,46 @@ if (
       process.env.JWT_SECRET as string,
       (err: any, decoded: any) => {
         if (err) {
-          console.log("Token verification failed:", err);
+          console.log('Token verification failed:', err);
           socket.disconnect();
           return;
         }
 
         socket.data.user = decoded;
-        console.log("User authenticated:", decoded.email);
-      }
+        console.log('User authenticated:', decoded.email);
+      },
     );
 
-    socket.on("send-message", async (message) => {
+    socket.on('send-message', async (message) => {
       try {
         // Émettre uniquement au destinataire
-        socket.broadcast.emit("receive-message", message);
+        socket.broadcast.emit('receive-message', message);
       } catch (error) {
-        console.error("Error handling socket message:", error);
+        console.error('Error handling socket message:', error);
       }
     });
 
-    socket.on("error", (error: Error) => {
-      console.log("Socket error:", error);
+    socket.on('error', (error: Error) => {
+      console.log('Socket error:', error);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("User disconnected:", socket.id, "Reason:", reason);
+    socket.on('disconnect', (reason) => {
+      console.log('User disconnected:', socket.id, 'Reason:', reason);
     });
 
     // Quand un utilisateur se connecte
     if (socket.data.user) {
-      socket.broadcast.emit("user_status", {
+      socket.broadcast.emit('user_status', {
         userId: socket.data.user.id,
-        online: true
+        online: true,
       });
     }
 
-    socket.on("disconnect", () => {
+    socket.on('disconnect', () => {
       if (socket.data.user) {
-        socket.broadcast.emit("user_status", {
+        socket.broadcast.emit('user_status', {
           userId: socket.data.user.id,
-          online: false
+          online: false,
         });
       }
     });
@@ -153,19 +153,19 @@ if (
   mongoose
     .connect(MONGO_URI)
     .then(() => {
-      console.log("Connected to MongoDB");
+      console.log('Connected to MongoDB');
       httpServer.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
-        console.log("Socket.IO configured and listening");
+        console.log('Socket.IO configured and listening');
       });
     })
     .catch((err) => {
-      console.error("Database connection error:", err);
+      console.error('Database connection error:', err);
     });
 
-  app.use("/api/messages", messageRoutes);
+  app.use('/api/messages', messageRoutes);
 } else {
-  console.error("Missing required environment variables");
+  console.error('Missing required environment variables');
 }
 
 // Gestion des erreurs non capturées

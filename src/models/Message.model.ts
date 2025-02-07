@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 interface IMessageBase {
   content: string;
@@ -11,7 +11,7 @@ interface IMessageBase {
 export interface IMessage extends IMessageBase, Document {}
 
 export interface IMessagePopulated
-  extends Omit<IMessage, "sender" | "receiver"> {
+  extends Omit<IMessage, 'sender' | 'receiver'> {
   sender: {
     _id: Types.ObjectId;
     firstName: string;
@@ -28,10 +28,10 @@ export interface IMessagePopulated
 
 const messageSchema = new Schema<IMessage>({
   content: { type: String, required: true },
-  sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  receiver: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   read: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model<IMessage>("Message", messageSchema);
+export default mongoose.model<IMessage>('Message', messageSchema);

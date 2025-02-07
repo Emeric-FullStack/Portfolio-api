@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserLog extends Document {
   userId: string;
@@ -13,7 +13,7 @@ const UserLogSchema: Schema = new Schema({
   action: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
   ipAddress: { type: String, required: true },
-  userAgent: { type: String, required: true }
+  userAgent: { type: String, required: true },
 });
 
-export default mongoose.model<IUserLog>("UserLog", UserLogSchema);
+export default mongoose.model<IUserLog>('UserLog', UserLogSchema);
