@@ -340,7 +340,7 @@ export const updateListPosition: RequestHandler = async (
   try {
     const { boardId, listId } = req.params;
     const { position: newPosition } = req.body;
-
+    console.log('updateListPosition', boardId, listId, newPosition);
     let lists = await List.find({ board: boardId }).sort('position');
 
     const draggedList = lists.find((list) => list._id.toString() === listId);
@@ -376,7 +376,46 @@ export const updateListPosition: RequestHandler = async (
 
     res.status(200).json(updatedLists);
   } catch (error) {
-    console.error('Erreur lors de la mise à jour des positions :', error);
+    console.error('Erreur lors de la mise à jour des positions:', error);
+    res.status(500).json({ message: 'Erreur interne du serveur' });
+  }
+};
+
+export const updateListPositions: RequestHandler = async (
+  req,
+  res,
+): Promise<void> => {
+  try {
+    const { boardId } = req.params;
+    const { lists } = req.body;
+
+    console.log('updateListPositions - boardId:', boardId);
+    console.log('updateListPositions - lists:', lists);
+
+    const updates = lists.map((list: { _id: string; position: number }) =>
+      List.findByIdAndUpdate(
+        list._id,
+        { position: list.position },
+        { new: true },
+      ),
+    );
+
+    await Promise.all(updates);
+
+    const updatedLists = await List.find({ board: boardId })
+      .populate({
+        path: 'cards',
+        options: { sort: { position: 1 } },
+        populate: {
+          path: 'checklists',
+          model: 'Checklist',
+        },
+      })
+      .sort('position');
+
+    res.status(200).json(updatedLists);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des positions:', error);
     res.status(500).json({ message: 'Erreur interne du serveur' });
   }
 };

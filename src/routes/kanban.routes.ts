@@ -31,6 +31,7 @@ import {
   toggleChecklistItem,
   updateCardPosition,
   moveCardToList,
+  updateListPositions,
 } from '../controllers/kanban.controller';
 import { authenticateUser } from '../middlewares/authMiddleware';
 
@@ -127,5 +128,11 @@ router.patch(
 );
 
 router.post('/cards/:cardId/comments', authenticateUser, createComment);
+
+router.patch(
+  '/:boardId/lists/update-positions',
+  authenticateUser,
+  updateListPositions,
+);
 
 export default router;
